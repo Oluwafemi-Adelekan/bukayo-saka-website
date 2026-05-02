@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-notable: 'Notable', serif;
+  --font-urbanist: 'Urbanist', sans-serif;
+  --color-obsidian: #09090b;
+  --color-arsenal-red: #EF0107;
+  --color-burgundy: #3d0c11;
+  --color-silver: #C0C0C0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-obsidian: #09090b;
+  --color-arsenal-red: #EF0107;
+  --color-burgundy: #3d0c11;
+  --color-silver: #C0C0C0;
+  --font-notable: 'Notable', serif;
+  --font-urbanist: 'Urbanist', sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-obsidian);
+  color: #ffffff;
+  font-family: var(--font-urbanist);
+  overflow-x: hidden;
+}
+
+/* Grain animation */
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -10%); }
+  20% { transform: translate(-15%, 5%); }
+  30% { transform: translate(7%, -25%); }
+  40% { transform: translate(-5%, 25%); }
+  50% { transform: translate(-15%, 10%); }
+  60% { transform: translate(15%, 0%); }
+  70% { transform: translate(0%, 15%); }
+  80% { transform: translate(3%, 35%); }
+  90% { transform: translate(-10%, 10%); }
+}
+
+.grain-animate {
+  animation: grain 8s steps(10) infinite;
+}
+
+/* Scroll indicator bounce */
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+.bounce-down {
+  animation: bounce-down 1.5s ease-in-out infinite;
+}
+
+/* Counter underline accent */
+.accent-underline::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: #EF0107;
+  margin-top: 8px;
+}
+
+/* Horizontal scroll container */
+.horizontal-scroll::-webkit-scrollbar {
+  height: 2px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: #EF0107;
 }
