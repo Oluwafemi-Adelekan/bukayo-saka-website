@@ -4,7 +4,21 @@ import { useEffect, useRef } from 'react'
 
 const TOTAL_DURATION = 5.0
 
-export default function SignatureStroke() {
+type Props = {
+  className?: string
+  startDelay?: number
+  glow?: boolean
+  loop?: boolean
+  color?: string
+}
+
+export default function SignatureStroke({
+  className = 'w-[70%] max-w-[200px] md:max-w-[280px] lg:max-w-[340px] select-none pointer-events-none',
+  startDelay = 3.0,
+  glow = true,
+  loop = false,
+  color = '#ffffff',
+}: Props = {}) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -59,21 +73,6 @@ export default function SignatureStroke() {
         // We will restructure the SVG to use individual masks for each path
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
         const inkGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        
-        // Global hole mask to cleanly cut out holes
-        const globalHoleMask = document.createElementNS('http://www.w3.org/2000/svg', 'mask')
-        globalHoleMask.setAttribute('id', 'global-hole-mask')
-        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-        // Ensure rect covers the entire viewBox area
-        bgRect.setAttribute('x', '-1000')
-        bgRect.setAttribute('y', '-1000')
-        bgRect.setAttribute('width', '10000')
-        bgRect.setAttribute('height', '10000')
-        bgRect.setAttribute('fill', 'white')
-        globalHoleMask.appendChild(bgRect)
-        defs.appendChild(globalHoleMask)
-        
-        inkGroup.setAttribute('mask', 'url(#global-hole-mask)')
 
         const targets: { el: SVGPathElement; len: number }[] = []
 
@@ -89,15 +88,14 @@ export default function SignatureStroke() {
             }
           } catch {}
 
-          // Determine if this is an ink layer or a hole cutout
-          // Dark fills in the original SVG represent holes (like inside A and 8)
+          // Determine if this is an ink layer or a hole cutout/background
+          // Dark fills in the original SVG represent holes or backgrounds
           const isHole = fill === '#000000' || fill === '#010101' || fill === '#393939' || fill === '#DFDFDF' || fill === '#AAAAAA'
 
           if (isHole) {
-            // Cutout hole: fill black inside the global hole mask to make it transparent
-            path.setAttribute('fill', 'black')
-            path.setAttribute('stroke', 'none')
-            globalHoleMask.appendChild(path)
+            // Simply ignore background/hole paths so they don't create artifacts or straight lines
+            path.remove()
+            continue
           } else {
             // Create a unique mask for this specific ink path
             const maskId = `mask-${targets.length}`
@@ -125,7 +123,7 @@ export default function SignatureStroke() {
             const singleInkGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
             singleInkGroup.setAttribute('mask', `url(#${maskId})`)
 
-            path.setAttribute('fill', '#ffffff')
+            path.setAttribute('fill', color)
             path.setAttribute('stroke', 'none')
             singleInkGroup.appendChild(path)
             
@@ -142,14 +140,44 @@ export default function SignatureStroke() {
         svgEl.getBoundingClientRect()
 
         const totalLen = targets.reduce((s, t) => s + t.len, 0) || 1
+        const HOLD_AFTER = 1.6   // seconds to hold completed signature
+        const ERASE_DUR  = 0.8   // seconds to erase before next loop
 
-        // Animate the mask paths sequentially, waiting for typing animation to finish
-        let delay = 3.0
-        for (const { el, len } of targets) {
-          const dur = Math.max((len / totalLen) * TOTAL_DURATION, 0.02)
-          el.style.transition = `stroke-dashoffset ${dur}s ease-in-out ${delay}s`
-          el.style.strokeDashoffset = '0'
-          delay += dur
+        const playOnce = (initialDelay: number) => {
+          let delay = initialDelay
+          for (const { el, len } of targets) {
+            const dur = Math.max((len / totalLen) * TOTAL_DURATION, 0.02)
+            el.style.transition = `stroke-dashoffset ${dur}s ease-in-out ${delay}s`
+            el.style.strokeDashoffset = '0'
+            delay += dur
+          }
+          return delay // total time consumed
+        }
+
+        const eraseAndReset = () => {
+          // Erase: animate strokeDashoffset back to len (full hidden)
+          for (const { el, len } of targets) {
+            el.style.transition = `stroke-dashoffset ${ERASE_DUR}s ease-in-out 0s`
+            el.style.strokeDashoffset = String(len)
+          }
+        }
+
+        playOnce(startDelay)
+        if (loop) {
+          // Each tick: wait draw+hold → erase → wait erase → redraw → recurse
+          const tick = () => {
+            if (cancelled) return
+            window.setTimeout(() => {
+              if (cancelled) return
+              eraseAndReset()
+              window.setTimeout(() => {
+                if (cancelled) return
+                playOnce(0)
+                tick()
+              }, ERASE_DUR * 1000 + 50)
+            }, (TOTAL_DURATION + HOLD_AFTER) * 1000)
+          }
+          window.setTimeout(tick, startDelay * 1000)
         }
       })
       .catch(() => {})
@@ -158,13 +186,13 @@ export default function SignatureStroke() {
       cancelled = true
       if (container) container.innerHTML = ''
     }
-  }, [])
+  }, [startDelay, loop, color])
 
   return (
     <div
       ref={containerRef}
-      className="w-[70%] max-w-[200px] md:max-w-[280px] lg:max-w-[340px] select-none pointer-events-none"
-      style={{ filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.15))' }}
+      className={className}
+      style={glow ? { filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.15))' } : undefined}
     />
   )
 }

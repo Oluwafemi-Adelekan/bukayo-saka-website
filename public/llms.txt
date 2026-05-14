@@ -1,0 +1,111 @@
+# Bukayo Saka | From Ealing to the World
+
+> An immersive digital tribute to Bukayo Saka — Arsenal's No.7, England international, FA Cup winner, and one of football's brightest talents. Born in Ealing, London on 5 September 2001, Saka rose from the Hale End Academy to the top of world football.
+
+## Player Overview
+
+- **Full Name:** Bukayo Ayoyinka Saka
+- **Known As:** "Little Chilli"
+- **Date of Birth:** 5 September 2001
+- **Place of Birth:** Ealing, London, England
+- **Nationality:** English (Nigerian heritage)
+- **Position:** Winger / Right-winger
+- **Current Club:** Arsenal F.C. (academy 2008 — present, professional debut 2018)
+- **Shirt Number:** 7 (Arsenal)
+- **International Team:** England senior squad (debut October 2020)
+
+## Career Statistics
+
+Statistics on this site update automatically from live football APIs (FPL, football-data.org) with 1–6 hour caching. Career baseline through end of 2023/24:
+
+- **Premier League Goals:** 50+ (career)
+- **Premier League Assists:** 64+ (career)
+- **Arsenal Total Goals:** 83+ (all competitions)
+- **Arsenal Total Assists:** 64+
+- **Premier League Goal Involvements:** 147+
+- **England Caps:** 63+
+- **England Goals:** 16+
+- **England Assists:** 17+
+
+## Career Timeline
+
+### 2008 — Hale End Academy
+Joined Arsenal's youth academy in Ealing aged seven. Progressed through every age group without leaving the club.
+
+### 2018 — Professional Debut
+Made his first-team debut in the UEFA Europa League on 29 November 2018 at age 17, becoming one of Arsenal's youngest debutants.
+
+### 2019 — First Premier League Appearance
+Broke into the first-team squad under Unai Emery and later flourished under Mikel Arteta.
+
+### 2020 — England Call-Up
+Called into the England senior squad for the first time in October 2020, aged 19. Provided an assist on his international debut.
+
+### 2021 — Arsenal No.7
+Permanently awarded Arsenal's iconic No.7 shirt — previously worn by club legends.
+
+### 2021 — Euro 2020 (held 2021)
+Featured in England's run to the final at Wembley. Missed his penalty in the shootout against Italy — the weight of a nation — before bouncing back as one of England's most trusted players.
+
+### 2022 — World Cup, Qatar
+One of England's standout performers in the group stage and knockout rounds. Scored and assisted throughout the tournament.
+
+### 2023 — England Men's Player of the Year
+Won the FA's England Men's Player of the Year award, voted for by supporters.
+
+### 2024 — FA Cup Winner
+Won the FA Cup with Arsenal, ending a 14-year wait for the club. Saka was central to Arsenal's run throughout the competition.
+
+### 2024 — Euro 2024
+Reached the final in Berlin against Spain. Featured prominently throughout the tournament as one of the Three Lions' most important players.
+
+## Beyond the Pitch
+
+### Big Shoe Foundation
+Saka's personal charitable initiative that provides shoes and educational support to children in Nigeria, helping those in need in his family's homeland.
+
+### Ealing Community
+Deeply committed to his home borough of Ealing, West London. Has supported local community projects and youth programmes.
+
+### Commercial Partnerships
+- **Nike** — Long-term partnership including signature Mercurial Furon boot collaborations
+- **Nando's** — Brand ambassador; a well-known fan of the restaurant chain
+- **EA Sports** — Featured prominently in FIFA/EA FC
+- Additional partnerships with global brands in fashion and lifestyle
+
+## Site Sections
+
+1. **Hero** — Full-screen cinematic introduction
+2. **THE STORY** — Animated signature reveal leading into his life story; scroll-driven
+3. **Hale End Academy** — Horizontal scroll gallery through his youth career
+4. **Professional Debut** — Scroll sequence: Arsenal debut → FA Cup → England call-up → first England goal
+5. **Number 7** — Receiving the iconic Arsenal shirt
+6. **Club & Country** — Dual immersive narratives: Arsenal ("The Gunner") and England ("The Lion")
+7. **England Story** — 3D depth-scrolling journey through international career chapters: International Debut, World Cup 2022, Player of the Year, Euro 2024
+8. **Beyond the Pitch** — Charity, community, and commercial life
+9. **Match Center** — Live fixture widget with upcoming Arsenal matches and current season stats
+10. **Footer** — Contact and social media links
+
+## Live Data Sources
+
+- **Current season stats:** Fantasy Premier League (FPL) public API — updates within 6 hours of each match
+- **Fixtures:** football-data.org, api-football (RapidAPI), TheSportsDB — cascading fallbacks
+- **Career baseline:** Manually maintained in codebase, updated at start of each season
+
+## Technical Stack
+
+- Next.js 16 (App Router) with Turbopack
+- React 19, Framer Motion 12, Tailwind CSS v4
+- Lenis smooth scroll
+- CSS 3D perspective transforms for immersive scenes
+- Next.js ISR for cached API responses
+
+## Social Media
+
+- Instagram: instagram.com/bukayosaka87
+- Twitter/X: twitter.com/BukayoSaka87
+- TikTok: tiktok.com/@bukayosaka87
+
+## Disclaimer
+
+This is a fan tribute site. It is not officially affiliated with Bukayo Saka, Arsenal F.C., the Football Association, or any of their commercial partners. All trademarks and images are property of their respective owners.

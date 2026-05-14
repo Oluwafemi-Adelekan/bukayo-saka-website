@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, useInView } from 'framer-motion'
+import GrainOverlay from './GrainOverlay'
 
 interface StatItem {
   value: number
@@ -70,7 +71,7 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
       {/* Large number */}
       <div
         className="text-6xl md:text-7xl xl:text-8xl font-normal leading-none mb-2 tabular-nums"
-        style={{ fontFamily: 'Notable, serif', color: stat.color }}
+        style={{ fontFamily: 'Kegilka, serif', color: stat.color }}
       >
         {count}
         <span className="text-4xl md:text-5xl">{stat.suffix}</span>
@@ -79,7 +80,7 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
       {/* Label */}
       <div
         className="text-white text-base md:text-lg font-medium mt-3"
-        style={{ fontFamily: 'Urbanist, sans-serif' }}
+        style={{ fontFamily: 'Mona Sans, sans-serif' }}
       >
         {stat.label}
       </div>
@@ -87,7 +88,7 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
       {/* Sublabel */}
       <div
         className="text-zinc-600 text-xs tracking-widest uppercase mt-1"
-        style={{ fontFamily: 'Urbanist, sans-serif' }}
+        style={{ fontFamily: 'Mona Sans, sans-serif' }}
       >
         {stat.sublabel}
       </div>
@@ -172,6 +173,9 @@ export default function StatsSection() {
       id="stats"
       className="relative w-full py-32 px-4 md:px-6 overflow-hidden"
     >
+      {/* Grain overlay */}
+      <GrainOverlay />
+
       {/* Background number watermark */}
       <div
         className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
@@ -179,7 +183,7 @@ export default function StatsSection() {
       >
         <span
           className="text-[50vw] font-normal text-white/[0.02] leading-none"
-          style={{ fontFamily: 'Notable, serif' }}
+          style={{ fontFamily: 'Kegilka, serif' }}
         >
           7
         </span>
@@ -195,13 +199,13 @@ export default function StatsSection() {
       >
         <p
           className="text-[#EF0107] text-xs tracking-[0.4em] uppercase mb-4"
-          style={{ fontFamily: 'Urbanist, sans-serif' }}
+          style={{ fontFamily: 'Mona Sans, sans-serif' }}
         >
           Live Dashboard
         </p>
         <h2
           className="text-6xl md:text-8xl lg:text-[9vw] leading-none font-normal text-white"
-          style={{ fontFamily: 'Notable, serif' }}
+          style={{ fontFamily: 'Kegilka, serif' }}
         >
           BY THE
           <br />
@@ -222,7 +226,7 @@ export default function StatsSection() {
         <div className="w-2 h-2 rounded-full bg-[#EF0107] animate-pulse" />
         <span
           className="text-[#EF0107] text-xs tracking-[0.3em] uppercase"
-          style={{ fontFamily: 'Urbanist, sans-serif' }}
+          style={{ fontFamily: 'Mona Sans, sans-serif' }}
         >
           Live · Premier League {season}
         </span>

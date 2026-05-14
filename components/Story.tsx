@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useRef } from 'react'
+import GrainOverlay from './GrainOverlay'
 
 const milestones = [
   {
@@ -26,8 +27,8 @@ const milestones = [
   },
   {
     year: '2020',
-    title: 'FA Cup Winner & England Call-Up',
-    body: 'Wins his first major honour — the FA Cup — and earns his first England call-up. One of the most important years of his football life, all before his 19th birthday.',
+    title: 'FA Cup Winner',
+    body: 'Arsenal beat Chelsea 2–1 in the FA Cup Final at Wembley — Aubameyang with two goals, including a nerveless penalty. Saka starts the final, becoming an FA Cup winner at just 18. Arsenal\'s 14th FA Cup. Arteta\'s first trophy. The start of something real.',
   },
   {
     year: '2021',
@@ -55,6 +56,9 @@ export default function Story() {
       ref={ref}
       className="relative w-full py-32 px-4 md:px-6"
     >
+      {/* Grain overlay */}
+      <GrainOverlay />
+
       {/* Section header */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
@@ -66,7 +70,7 @@ export default function Story() {
 
         <h2
           className="text-6xl md:text-8xl lg:text-[9vw] leading-none font-normal text-white flex flex-col md:flex-row items-start md:items-baseline gap-2 md:gap-6"
-          style={{ fontFamily: 'Notable, serif' }}
+          style={{ fontFamily: 'Kegilka, serif' }}
         >
           <span className="text-xl md:text-3xl lg:text-4xl translate-y-0 md:-translate-y-8">
             THE
@@ -101,7 +105,7 @@ export default function Story() {
               <div className="md:w-28 flex-shrink-0 flex flex-row md:flex-col items-center md:items-end gap-4 md:gap-0">
                 <span
                   className="text-3xl md:text-4xl text-zinc-600 group-hover:text-[#EF0107] transition-colors duration-300 font-normal"
-                  style={{ fontFamily: 'Notable, serif' }}
+                  style={{ fontFamily: 'Kegilka, serif' }}
                 >
                   {item.year}
                 </span>
@@ -113,13 +117,13 @@ export default function Story() {
               <div className="pl-8 md:pl-0 flex-1 border-b border-white/5 pb-16">
                 <h3
                   className="text-xl md:text-2xl text-white font-normal mb-3 group-hover:text-[#EF0107] transition-colors duration-300"
-                  style={{ fontFamily: 'Notable, serif' }}
+                  style={{ fontFamily: 'Kegilka, serif' }}
                 >
                   {item.title}
                 </h3>
                 <p
                   className="text-zinc-500 text-base leading-relaxed max-w-2xl"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
+                  style={{ fontFamily: 'Mona Sans, sans-serif' }}
                 >
                   {item.body}
                 </p>
@@ -140,19 +144,19 @@ export default function Story() {
         <div className="absolute top-0 left-0 w-1 h-full bg-[#EF0107]" />
         <p
           className="text-[#EF0107] text-xs tracking-[0.3em] uppercase mb-4"
-          style={{ fontFamily: 'Urbanist, sans-serif' }}
+          style={{ fontFamily: 'Mona Sans, sans-serif' }}
         >
           On Identity
         </p>
         <blockquote
           className="text-2xl md:text-4xl text-white font-normal leading-snug max-w-4xl"
-          style={{ fontFamily: 'Notable, serif' }}
+          style={{ fontFamily: 'Kegilka, serif' }}
         >
           &ldquo;I feel like when I play, you can see my personality — I like to be direct, I like to be brave.&rdquo;
         </blockquote>
         <p
           className="mt-6 text-zinc-500 text-sm tracking-wide"
-          style={{ fontFamily: 'Urbanist, sans-serif' }}
+          style={{ fontFamily: 'Mona Sans, sans-serif' }}
         >
           — Bukayo Saka
         </p>

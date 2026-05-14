@@ -1,290 +1,342 @@
 import { NextResponse } from 'next/server'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+export const dynamic = 'force-dynamic'
 
-export type MatchState = 'live' | 'halftime' | 'result' | 'upcoming'
+// ─── API credentials ────────────────────────────────────────────────────────
+const RAPIDAPI_KEY = '79297d4641a5336f7956620d82253884'
+const FD_KEY = process.env.FOOTBALL_DATA_API_KEY
+const SPORTDB_PAID_KEY = '9j2JlF'
+const AF_ARSENAL_ID = 42
+const SPORTSDB_ARSENAL_ID = '133604'
 
-export interface MatchInfo {
-  state: MatchState
+// ─── Crest map — media.api-sports.io by team ID ─────────────────────────────
+// These URLs are public PNGs with no hotlink protection (confirmed 200).
+// Format: https://media.api-sports.io/football/teams/{id}.png
+function apiSportsCrest(id: number) {
+  return `https://media.api-sports.io/football/teams/${id}.png`
+}
+
+const CREST: Record<string, string> = {
+  // Premier League
+  'Arsenal':                   apiSportsCrest(42),
+  'Arsenal FC':                apiSportsCrest(42),
+  'Aston Villa':               apiSportsCrest(66),
+  'Aston Villa FC':            apiSportsCrest(66),
+  'Bournemouth':               apiSportsCrest(35),
+  'AFC Bournemouth':           apiSportsCrest(35),
+  'Brentford':                 apiSportsCrest(55),
+  'Brentford FC':              apiSportsCrest(55),
+  'Brighton':                  apiSportsCrest(51),
+  'Brighton & Hove Albion':    apiSportsCrest(51),
+  'Brighton & Hove Albion FC': apiSportsCrest(51),
+  'Burnley':                   apiSportsCrest(44),
+  'Burnley FC':                apiSportsCrest(44),
+  'Chelsea':                   apiSportsCrest(49),
+  'Chelsea FC':                apiSportsCrest(49),
+  'Crystal Palace':            apiSportsCrest(52),
+  'Crystal Palace FC':         apiSportsCrest(52),
+  'Everton':                   apiSportsCrest(45),
+  'Everton FC':                apiSportsCrest(45),
+  'Fulham':                    apiSportsCrest(36),
+  'Fulham FC':                 apiSportsCrest(36),
+  'Ipswich Town':              apiSportsCrest(57),
+  'Ipswich Town FC':           apiSportsCrest(57),
+  'Leicester City':            apiSportsCrest(46),
+  'Leicester City FC':         apiSportsCrest(46),
+  'Liverpool':                 apiSportsCrest(40),
+  'Liverpool FC':              apiSportsCrest(40),
+  'Manchester City':           apiSportsCrest(50),
+  'Manchester City FC':        apiSportsCrest(50),
+  'Manchester United':         apiSportsCrest(33),
+  'Manchester United FC':      apiSportsCrest(33),
+  'Newcastle United':          apiSportsCrest(34),
+  'Newcastle United FC':       apiSportsCrest(34),
+  'Newcastle':                 apiSportsCrest(34),
+  'Nottingham Forest':         apiSportsCrest(65),
+  'Nottingham Forest FC':      apiSportsCrest(65),
+  "Nott'm Forest":             apiSportsCrest(65),
+  'Southampton':               apiSportsCrest(41),
+  'Southampton FC':            apiSportsCrest(41),
+  'Tottenham':                 apiSportsCrest(47),
+  'Tottenham Hotspur':         apiSportsCrest(47),
+  'Tottenham Hotspur FC':      apiSportsCrest(47),
+  'West Ham':                  apiSportsCrest(48),
+  'West Ham United':           apiSportsCrest(48),
+  'West Ham United FC':        apiSportsCrest(48),
+  'Wolverhampton Wanderers':   apiSportsCrest(39),
+  'Wolverhampton':             apiSportsCrest(39),
+  'Wolves':                    apiSportsCrest(39),
+  // European
+  'PSG':                       apiSportsCrest(85),
+  'Paris Saint-Germain':       apiSportsCrest(85),
+  'Paris Saint-Germain F.C.':  apiSportsCrest(85),
+  'Paris Saint-Germain FC':    apiSportsCrest(85),
+  'Paris Saint Germain':       apiSportsCrest(85),
+  'Real Madrid':               apiSportsCrest(541),
+  'Real Madrid CF':            apiSportsCrest(541),
+  'FC Barcelona':              apiSportsCrest(529),
+  'Barcelona':                 apiSportsCrest(529),
+  'Bayern Munich':             apiSportsCrest(157),
+  'FC Bayern München':         apiSportsCrest(157),
+  'Atletico Madrid':           apiSportsCrest(530),
+  'Atlético de Madrid':        apiSportsCrest(530),
+  'Borussia Dortmund':         apiSportsCrest(165),
+  'Bayer Leverkusen':          apiSportsCrest(168),
+  'Bayer 04 Leverkusen':       apiSportsCrest(168),
+  'Inter Milan':               apiSportsCrest(505),
+  'FC Internazionale Milano':  apiSportsCrest(505),
+  'Internazionale':            apiSportsCrest(505),
+  'AC Milan':                  apiSportsCrest(489),
+  'Juventus':                  apiSportsCrest(496),
+  'Juventus FC':               apiSportsCrest(496),
+  'Benfica':                   apiSportsCrest(211),
+  'SL Benfica':                apiSportsCrest(211),
+  'Porto':                     apiSportsCrest(212),
+  'FC Porto':                  apiSportsCrest(212),
+  'Ajax':                      apiSportsCrest(194),
+  'AFC Ajax':                  apiSportsCrest(194),
+  'Napoli':                    apiSportsCrest(492),
+  'SSC Napoli':                apiSportsCrest(492),
+  'RB Leipzig':                apiSportsCrest(173),
+  'Feyenoord':                 apiSportsCrest(209),
+}
+
+// ─── Resolve crest URL from team name ────────────────────────────────────────
+// api-sports.io CDN has no hotlink protection — return URLs directly.
+// If api-football returns a logo URL for a team we don't have, use it directly too.
+function resolveCrest(name: string, fallback: string): string {
+  if (CREST[name]) return CREST[name]
+  if (CREST[name + ' FC']) return CREST[name + ' FC']
+  const noFc = name.replace(/ FC$/i, '')
+  if (CREST[noFc]) return CREST[noFc]
+
+  // Case-insensitive partial match
+  const lower = name.toLowerCase()
+  for (const [key, url] of Object.entries(CREST)) {
+    if (key.toLowerCase() === lower || lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) {
+      return url
+    }
+  }
+
+  // api-football logo CDN also has no hotlink protection — use as fallback
+  if (fallback.startsWith('https://media.api-sports.io/')) return fallback
+
+  return ''
+}
+
+type Fixture = {
   homeTeam: string
   awayTeam: string
   homeTeamCrest: string
   awayTeamCrest: string
-  homeScore: number | null
-  awayScore: number | null
-  minute: string | null
+  date: string
+  time: string
+  competition: string
+  venue: string
+  status: string
+}
+
+type MatchInfo = {
+  state: 'upcoming' | 'live'
+  homeTeam: string
+  awayTeam: string
+  homeTeamCrest: string
+  awayTeamCrest: string
+  homeScore: null
+  awayScore: null
+  minute: null
   date: string
   time: string
   competition: string
   venue: string
 }
 
-// ─── ESPN API helpers ─────────────────────────────────────────────────────────
-
-const ARSENAL_ABBREVIATIONS = new Set(['ARS', 'AFC', 'ARSENAL'])
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isArsenal(team: any): boolean {
-  const name: string = team?.displayName ?? team?.name ?? ''
-  const abbr: string = (team?.abbreviation ?? '').toUpperCase()
-  return name.toLowerCase().includes('arsenal') || ARSENAL_ABBREVIATIONS.has(abbr)
+function toMatchInfo(f: Fixture): MatchInfo {
+  return {
+    state: 'upcoming',
+    homeTeam: f.homeTeam,
+    awayTeam: f.awayTeam,
+    homeTeamCrest: f.homeTeamCrest,
+    awayTeamCrest: f.awayTeamCrest,
+    homeScore: null,
+    awayScore: null,
+    minute: null,
+    date: f.date,
+    time: f.time,
+    competition: f.competition,
+    venue: f.venue,
+  }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseESPNEvent(event: any, leagueName: string): MatchInfo | null {
-  try {
-    const comp = event.competitions?.[0]
-    if (!comp) return null
+// ─── Hard-coded upcoming fixtures (season-end safety net) ───────────────────
+const KNOWN_REMAINING: Fixture[] = [
+  {
+    homeTeam: 'Arsenal', awayTeam: 'Burnley',
+    homeTeamCrest: CREST['Arsenal'], awayTeamCrest: CREST['Burnley'],
+    date: '2026-05-18', time: '19:00', competition: 'Premier League',
+    venue: 'Emirates Stadium', status: 'SCHEDULED',
+  },
+  {
+    homeTeam: 'Crystal Palace', awayTeam: 'Arsenal',
+    homeTeamCrest: CREST['Crystal Palace'], awayTeamCrest: CREST['Arsenal'],
+    date: '2026-05-24', time: '16:00', competition: 'Premier League',
+    venue: 'Selhurst Park', status: 'SCHEDULED',
+  },
+  {
+    homeTeam: 'Arsenal', awayTeam: 'PSG',
+    homeTeamCrest: CREST['Arsenal'], awayTeamCrest: CREST['PSG'],
+    date: '2026-05-30', time: '20:00', competition: 'UEFA Champions League Final',
+    venue: 'Puskás Aréna, Budapest', status: 'SCHEDULED',
+  },
+]
 
-    const home = comp.competitors?.find((c: any) => c.homeAway === 'home')
-    const away = comp.competitors?.find((c: any) => c.homeAway === 'away')
-    if (!home || !away) return null
+// ─── api-football (RapidAPI) — free plan supports from/to with season 2024 ──
+type AFFixture = {
+  fixture: { date: string; venue: { name: string | null; city: string | null } | null }
+  league: { name: string }
+  teams: {
+    home: { name: string; logo: string }
+    away: { name: string; logo: string }
+  }
+}
 
-    const statusType = comp.status?.type ?? {}
-    const statusName: string = statusType.name ?? ''
-    const statusState: string = statusType.state ?? 'pre'   // pre | in | post
-
-    let state: MatchState = 'upcoming'
-    if (statusState === 'in') {
-      state = statusName === 'STATUS_HALFTIME' ? 'halftime' : 'live'
-    } else if (statusState === 'post') {
-      state = 'result'
+async function fetchFromApiFootball(): Promise<Fixture[]> {
+  const today = new Date().toISOString().slice(0, 10)
+  const threeMonthsOut = new Date(Date.now() + 90 * 86400_000).toISOString().slice(0, 10)
+  // Free plan: seasons 2022–2024 only. Season 2024 = 2024-25 football year.
+  const res = await fetch(
+    `https://v3.football.api-sports.io/fixtures?team=${AF_ARSENAL_ID}&season=2024&from=${today}&to=${threeMonthsOut}`,
+    {
+      headers: {
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': 'v3.football.api-sports.io',
+        'x-apisports-key': RAPIDAPI_KEY,
+      },
+      next: { revalidate: 86400 },
     }
-
-    const matchDate = new Date(comp.date ?? event.date)
-
+  )
+  if (!res.ok) throw new Error(`api-football ${res.status}`)
+  const data: { errors: unknown; response: AFFixture[] } = await res.json()
+  // Paid feature errors come back as HTTP 200 with an errors object
+  if (data.errors && Object.keys(data.errors as object).length) throw new Error('api-football: plan error')
+  if (!data.response?.length) throw new Error('api-football: no fixtures')
+  return data.response.slice(0, 10).map(m => {
+    const dt = new Date(m.fixture.date)
+    const venue = m.fixture.venue
     return {
-      state,
-      homeTeam: home.team?.displayName ?? home.team?.name ?? '',
-      awayTeam: away.team?.displayName ?? away.team?.name ?? '',
-      homeTeamCrest: home.team?.logo ?? '',
-      awayTeamCrest: away.team?.logo ?? '',
-      homeScore: state !== 'upcoming' ? parseInt(home.score ?? '0', 10) : null,
-      awayScore: state !== 'upcoming' ? parseInt(away.score ?? '0', 10) : null,
-      minute: state === 'live' ? (statusType.shortDetail ?? null) : null,
-      date: matchDate.toISOString().split('T')[0],
-      time: matchDate.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'UTC',
-      }),
-      competition: leagueName,
-      venue: comp.venue?.fullName ?? 'TBC',
+      homeTeam: m.teams.home.name,
+      awayTeam: m.teams.away.name,
+      homeTeamCrest: resolveCrest(m.teams.home.name, m.teams.home.logo),
+      awayTeamCrest: resolveCrest(m.teams.away.name, m.teams.away.logo),
+      date: dt.toISOString().slice(0, 10),
+      time: dt.toISOString().slice(11, 16),
+      competition: m.league.name,
+      venue: venue ? [venue.name, venue.city].filter(Boolean).join(', ') : '',
+      status: 'SCHEDULED',
     }
-  } catch {
-    return null
-  }
+  })
 }
 
-// Leagues to scan for Arsenal (in priority order)
-const ESPN_LEAGUES = [
-  { slug: 'uefa.champions_league', name: 'UEFA Champions League' },
-  { slug: 'eng.1',                 name: 'Premier League'        },
-  { slug: 'eng.fa_cup',            name: 'FA Cup'                },
-  { slug: 'eng.league_cup',        name: 'EFL Cup'               },
-  { slug: 'uefa.europa_league',    name: 'UEFA Europa League'    },
-]
-
-function toESPNDateStr(d: Date) {
-  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`
+// ─── football-data.org ────────────────────────────────────────────────────────
+type FDMatch = {
+  competition: { name: string }
+  utcDate: string
+  homeTeam: { name: string; crest: string }
+  awayTeam: { name: string; crest: string }
+  venue?: string
 }
 
-/**
- * Check multiple league scoreboards for an Arsenal match.
- * Searches both today AND yesterday in UTC so a late-night match (e.g. 20:00 CET
- * = 18:00 UTC) is still found after midnight UTC when the user is still in the
- * 8-hour result window.
- */
-async function getArsenalMatchToday(): Promise<MatchInfo | null> {
-  const now = new Date()
-  const dates = [toESPNDateStr(now), toESPNDateStr(new Date(now.getTime() - 86_400_000))]
-
-  for (const dateStr of dates) {
-    for (const league of ESPN_LEAGUES) {
-      try {
-        const res = await fetch(
-          `https://site.api.espn.com/apis/site/v2/sports/soccer/${league.slug}/scoreboard?dates=${dateStr}`,
-          { next: { revalidate: 60 } }
-        )
-        if (!res.ok) continue
-        const data = await res.json()
-        const leagueName: string = data.leagues?.[0]?.name ?? league.name
-
-        for (const event of data.events ?? []) {
-          const comp = event.competitions?.[0]
-          const hasArsenal = comp?.competitors?.some((c: any) => isArsenal(c.team))
-          if (!hasArsenal) continue
-
-          const info = parseESPNEvent(event, leagueName)
-          if (!info) continue
-
-          if (info.state === 'live' || info.state === 'halftime') return info
-          if (info.state === 'result') {
-            // Use the raw event date for an accurate elapsed-time check
-            const kickoff = new Date(comp?.date ?? event.date)
-            const hoursSince = (Date.now() - kickoff.getTime()) / 3_600_000
-            if (hoursSince < 8) return info
-          }
-        }
-      } catch {
-        continue
-      }
+async function fetchFromFootballData(): Promise<Fixture[]> {
+  const res = await fetch(
+    'https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=10',
+    {
+      headers: { 'X-Auth-Token': FD_KEY! },
+      next: { revalidate: 86400 },
     }
-  }
-  return null
+  )
+  if (!res.ok) throw new Error(`football-data.org ${res.status}`)
+  const data: { matches: FDMatch[] } = await res.json()
+  return data.matches.slice(0, 10).map(m => {
+    const dt = new Date(m.utcDate)
+    return {
+      homeTeam: m.homeTeam.name,
+      awayTeam: m.awayTeam.name,
+      homeTeamCrest: resolveCrest(m.homeTeam.name, m.homeTeam.crest),
+      awayTeamCrest: resolveCrest(m.awayTeam.name, m.awayTeam.crest),
+      date: dt.toISOString().slice(0, 10),
+      time: dt.toISOString().slice(11, 16),
+      competition: m.competition.name,
+      venue: m.venue ?? '',
+      status: 'SCHEDULED',
+    }
+  })
 }
 
-/** Fetch next upcoming Arsenal PL fixtures from ESPN team schedule */
-async function getUpcomingESPN(): Promise<MatchInfo[]> {
-  try {
-    const res = await fetch(
-      'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/359/schedule',
-      { next: { revalidate: 1800 } }
+// ─── TheSportsDB ──────────────────────────────────────────────────────────────
+type SportsDBEvent = {
+  strHomeTeam: string
+  strAwayTeam: string
+  strHomeTeamBadge: string
+  strAwayTeamBadge: string
+  dateEvent: string
+  strTime: string | null
+  strLeague: string
+  strVenue: string | null
+}
+
+async function fetchFromSportsDB(): Promise<Fixture[]> {
+  const res = await fetch(
+    `https://www.thesportsdb.com/api/v1/json/${SPORTDB_PAID_KEY}/eventsnext.php?id=${SPORTSDB_ARSENAL_ID}`,
+    { next: { revalidate: 86400 }, headers: { 'User-Agent': 'BukayoSakaWebsite/1.0' } }
+  )
+  if (!res.ok) throw new Error(`TheSportsDB ${res.status}`)
+  const data: { events: SportsDBEvent[] | null } = await res.json()
+  if (!data.events?.length) throw new Error('TheSportsDB: no events')
+  return data.events.slice(0, 10).map(e => ({
+    homeTeam: e.strHomeTeam,
+    awayTeam: e.strAwayTeam,
+    homeTeamCrest: resolveCrest(e.strHomeTeam, e.strHomeTeamBadge ?? ''),
+    awayTeamCrest: resolveCrest(e.strAwayTeam, e.strAwayTeamBadge ?? ''),
+    date: e.dateEvent,
+    time: e.strTime ? e.strTime.slice(0, 5) : 'TBC',
+    competition: e.strLeague,
+    venue: e.strVenue ?? '',
+    status: 'SCHEDULED',
+  }))
+}
+
+// ─── Merge + deduplicate ──────────────────────────────────────────────────────
+function mergeFixtures(api: Fixture[], today: string): Fixture[] {
+  const result = [...api]
+  for (const known of KNOWN_REMAINING) {
+    if (known.date < today) continue
+    const covered = result.some(f =>
+      (f.homeTeam === known.homeTeam && f.awayTeam === known.awayTeam) ||
+      (f.competition.toLowerCase().includes(known.competition.toLowerCase().split(' ')[0]) &&
+       Math.abs(new Date(f.date).getTime() - new Date(known.date).getTime()) < 3 * 86400_000)
     )
-    if (!res.ok) return []
-    const data = await res.json()
-    const now = Date.now()
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data.events ?? [] as any[])
-      .filter((e: any) => {
-        const state = e.competitions?.[0]?.status?.type?.state
-        const d = new Date(e.competitions?.[0]?.date ?? e.date).getTime()
-        return state === 'pre' && d > now
-      })
-      .slice(0, 6)
-      .map((e: any) => parseESPNEvent(e, 'Premier League'))
-      .filter(Boolean) as MatchInfo[]
-  } catch {
-    return []
+    if (!covered) result.push(known)
   }
+  return result
+    .filter(f => f.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 10)
 }
 
-// ─── football-data.org helper (used when API key is set) ─────────────────────
-
-const ARSENAL_ID = 57
-
-async function getFDOFixtures(apiKey: string): Promise<{ current: MatchInfo | null; upcoming: MatchInfo[] }> {
-  try {
-    // Today's matches (any status) + next 6 scheduled
-    const today = new Date().toISOString().split('T')[0]
-    const [todayRes, scheduledRes] = await Promise.all([
-      fetch(`https://api.football-data.org/v4/teams/${ARSENAL_ID}/matches?dateFrom=${today}&dateTo=${today}`, {
-        headers: { 'X-Auth-Token': apiKey },
-        next: { revalidate: 60 },
-      }),
-      fetch(`https://api.football-data.org/v4/teams/${ARSENAL_ID}/matches?status=SCHEDULED&limit=6`, {
-        headers: { 'X-Auth-Token': apiKey },
-        next: { revalidate: 1800 },
-      }),
-    ])
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const toMatchInfo = (m: any, state: MatchState): MatchInfo => {
-      const d = new Date(m.utcDate)
-      return {
-        state,
-        homeTeam: m.homeTeam.shortName ?? m.homeTeam.name,
-        awayTeam: m.awayTeam.shortName ?? m.awayTeam.name,
-        homeTeamCrest: m.homeTeam.crest,
-        awayTeamCrest: m.awayTeam.crest,
-        homeScore: state !== 'upcoming' ? (m.score?.fullTime?.home ?? null) : null,
-        awayScore: state !== 'upcoming' ? (m.score?.fullTime?.away ?? null) : null,
-        minute: state === 'live' ? `${m.minute ?? ''}` : null,
-        date: d.toISOString().split('T')[0],
-        time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }),
-        competition: m.competition.name,
-        venue: m.venue ?? 'TBC',
-      }
-    }
-
-    let current: MatchInfo | null = null
-    if (todayRes.ok) {
-      const td = await todayRes.json()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const m of td.matches ?? [] as any[]) {
-        if (m.status === 'IN_PLAY' || m.status === 'PAUSED') {
-          current = toMatchInfo(m, m.status === 'PAUSED' ? 'halftime' : 'live')
-          break
-        }
-        if (m.status === 'FINISHED') {
-          current = toMatchInfo(m, 'result')
-        }
-      }
-    }
-
-    let upcoming: MatchInfo[] = []
-    if (scheduledRes.ok) {
-      const sd = await scheduledRes.json()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      upcoming = (sd.matches ?? [] as any[]).map((m: any) => toMatchInfo(m, 'upcoming'))
-    }
-
-    return { current, upcoming }
-  } catch {
-    return { current: null, upcoming: [] }
-  }
-}
-
-// ─── Hardcoded fallback ────────────────────────────────────────────────────────
-
-const FALLBACK: MatchInfo[] = [
-  {
-    state: 'upcoming',
-    homeTeam: 'Arsenal', awayTeam: 'Fulham',
-    homeTeamCrest: 'https://crests.football-data.org/57.png',
-    awayTeamCrest: 'https://crests.football-data.org/63.png',
-    homeScore: null, awayScore: null, minute: null,
-    date: '2026-05-02', time: '15:00',
-    competition: 'Premier League', venue: 'Emirates Stadium',
-  },
-  {
-    state: 'upcoming',
-    homeTeam: 'Arsenal', awayTeam: 'Atlético Madrid',
-    homeTeamCrest: 'https://crests.football-data.org/57.png',
-    awayTeamCrest: 'https://crests.football-data.org/78.png',
-    homeScore: null, awayScore: null, minute: null,
-    date: '2026-05-05', time: '20:00',
-    competition: 'UEFA Champions League', venue: 'Emirates Stadium',
-  },
-  {
-    state: 'upcoming',
-    homeTeam: 'West Ham', awayTeam: 'Arsenal',
-    homeTeamCrest: 'https://crests.football-data.org/563.png',
-    awayTeamCrest: 'https://crests.football-data.org/57.png',
-    homeScore: null, awayScore: null, minute: null,
-    date: '2026-05-10', time: '14:00',
-    competition: 'Premier League', venue: 'London Stadium',
-  },
-]
-
-// ─── Route handler ─────────────────────────────────────────────────────────────
-
+// ─── Route handler ────────────────────────────────────────────────────────────
 export async function GET() {
-  const apiKey = process.env.FOOTBALL_DATA_API_KEY
+  const today = new Date().toISOString().slice(0, 10)
+  let fixtures: Fixture[] = []
 
-  // 1. football-data.org (most accurate when key is set)
-  if (apiKey) {
-    const { current, upcoming } = await getFDOFixtures(apiKey)
-    return NextResponse.json({
-      current: current ?? upcoming[0] ?? FALLBACK[0],
-      fixtures: upcoming.length ? upcoming : FALLBACK,
-      source: 'football-data',
-    })
-  }
+  try { fixtures = await fetchFromApiFootball() } catch {}
+  if (!fixtures.length && FD_KEY) { try { fixtures = await fetchFromFootballData() } catch {} }
+  if (!fixtures.length) { try { fixtures = await fetchFromSportsDB() } catch {} }
 
-  // 2. ESPN (free, no key required)
-  const [todayMatch, upcomingESPN] = await Promise.all([
-    getArsenalMatchToday(),
-    getUpcomingESPN(),
-  ])
-
-  const fixtures = upcomingESPN.length ? upcomingESPN : FALLBACK
-  const current = todayMatch ?? fixtures[0]
+  const merged = mergeFixtures(fixtures, today)
+  const final = merged.length > 0 ? merged : KNOWN_REMAINING.filter(f => f.date >= today)
 
   return NextResponse.json({
-    current,
-    fixtures,
-    source: todayMatch ? 'espn-live' : upcomingESPN.length ? 'espn' : 'fallback',
+    fixtures: final,
+    current: final.length > 0 ? toMatchInfo(final[0]) : null,
   })
 }

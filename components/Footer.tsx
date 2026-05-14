@@ -1,186 +1,481 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
+import { createPortal } from 'react-dom'
+import GrainOverlay from './GrainOverlay'
+import FillButton from './FillButton'
 
-const navLinks = [
-  { label: 'Story', href: '#story' },
-  { label: 'Club & Country', href: '#club-country' },
-  { label: 'Stats', href: '#stats' },
-  { label: 'Foundation', href: '#foundation' },
-  { label: 'Merch', href: '#commercial' },
-  { label: 'Fixtures', href: '#fixtures' },
-]
+// ─── Legal overlay (shared shell) ──────────────────────────────────────────
+function LegalOverlay({
+  onClose,
+  children,
+}: {
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', fn)
+    return () => window.removeEventListener('keydown', fn)
+  }, [onClose])
 
-const socialLinks = [
-  { label: 'Instagram', href: '#', handle: '@bukayosaka87' },
-  { label: 'X / Twitter', href: '#', handle: '@BukayoSaka87' },
-  { label: 'TikTok', href: '#', handle: '@bukayosaka87' },
-]
-
-export default function Footer() {
   return (
-    <footer className="relative w-full border-t border-white/5 overflow-hidden">
-      {/* Large background number */}
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 28 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 400,
+        background: '#09090b', overflowY: 'auto',
+      }}
+      data-lenis-prevent="true"
+    >
+      <GrainOverlay />
+
+      {/* Vertical rule */}
       <div
-        className="absolute bottom-0 right-0 pointer-events-none select-none"
-        aria-hidden
+        style={{
+          position: 'fixed', left: 24, top: 24, bottom: 24,
+          width: 1, background: 'rgba(255,255,255,0.15)',
+          pointerEvents: 'none', zIndex: 2,
+        }}
+      />
+
+      <div
+        style={{
+          position: 'relative', zIndex: 1,
+          maxWidth: 720, margin: '0 auto',
+          padding: '72px 24px 80px 64px',
+        }}
       >
-        <span
-          className="text-[30vw] font-normal text-white/[0.02] leading-none"
-          style={{ fontFamily: 'Notable, serif' }}
-        >
-          7
-        </span>
+        {children}
       </div>
 
-      {/* Red accent top line */}
-      <div className="w-full h-px bg-gradient-to-r from-[#EF0107] via-[#EF0107]/50 to-transparent" />
+      {/* Close */}
+      <button
+        onClick={onClose}
+        aria-label="Close"
+        className="fixed top-4 right-4 md:top-6 md:right-6"
+        style={{
+          zIndex: 3,
+          color: 'rgba(255,255,255,0.45)',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+          width: 40, height: 40, borderRadius: 999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', padding: 0,
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}
+      >
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+          <path d="M2 2L18 18M18 2L2 18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+        </svg>
+      </button>
+    </motion.div>
+  )
+}
 
-      <div className="relative z-10 px-4 md:px-6 pt-20 pb-12">
-        {/* Top row */}
-        <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 pb-16 border-b border-white/5">
-          {/* Brand col */}
-          <div className="lg:w-80 flex-shrink-0">
-            {/* Monogram */}
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-14 h-14 border-2 border-[#EF0107] flex items-center justify-center">
-                <span
-                  className="text-white font-bold text-2xl"
-                  style={{ fontFamily: 'Notable, serif' }}
-                >
-                  7
-                </span>
-              </div>
-              <div>
-                <div
-                  className="text-white font-normal text-lg leading-tight"
-                  style={{ fontFamily: 'Notable, serif' }}
-                >
-                  Bukayo Saka
-                </div>
-                <div
-                  className="text-zinc-600 text-xs tracking-widest uppercase"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
-                >
-                  Official Website
-                </div>
-              </div>
-            </div>
-            <p
-              className="text-zinc-600 text-sm leading-relaxed mb-8 max-w-xs"
-              style={{ fontFamily: 'Urbanist, sans-serif' }}
+// ─── Terms & Conditions ─────────────────────────────────────────────────────
+function TermsContent() {
+  const h = (text: string) => (
+    <h3 style={{
+      fontFamily: 'Kegilka, serif', fontWeight: 400,
+      fontSize: 'clamp(1rem, 2vw, 1.3rem)', color: '#fff',
+      margin: '32px 0 10px', lineHeight: 1.1,
+    }}>{text}</h3>
+  )
+  const p = (text: string) => (
+    <p style={{
+      fontFamily: 'Mona Sans, sans-serif',
+      fontSize: 'clamp(0.8rem, 1vw, 0.88rem)',
+      lineHeight: 1.78, color: 'rgba(255,255,255,0.55)',
+      margin: '0 0 12px',
+    }}>{text}</p>
+  )
+
+  return (
+    <>
+      <h1 style={{
+        fontFamily: 'Kegilka, serif', fontWeight: 400,
+        fontSize: 'clamp(2rem, 4vw, 3.5rem)',
+        lineHeight: 0.92, color: '#fff', marginBottom: 8,
+      }}>
+        TERMS &amp;
+      </h1>
+      <h1 style={{
+        fontFamily: 'Mona Sans, sans-serif', fontWeight: 300,
+        fontSize: 'clamp(2rem, 4vw, 3.5rem)',
+        lineHeight: 0.92, color: '#fff', marginBottom: 40,
+      }}>
+        CONDITIONS
+      </h1>
+
+      <p style={{
+        fontFamily: 'Mona Sans, sans-serif', fontSize: '0.72rem',
+        color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em',
+        textTransform: 'uppercase', marginBottom: 32,
+      }}>
+        Last updated: May 2026
+      </p>
+
+      {h('1. Nature of This Website')}
+      {p('This is an unofficial fan tribute website dedicated to Bukayo Saka. It is not affiliated with, endorsed by, or connected to Bukayo Saka, his management or representatives, Arsenal Football Club, The Football Association, or any other organisation, brand, or individual mentioned herein. All trademarks, names, and likenesses belong to their respective owners.')}
+
+      {h('2. Purpose')}
+      {p('The content on this website — including statistics, biographical information, fixture data, and editorial content — is provided for entertainment, informational, and fan engagement purposes only. Nothing on this site constitutes official communication from any of the parties named.')}
+
+      {h('3. Intellectual Property')}
+      {p('Third-party logos, imagery, and trademarks referenced on this site are the property of their respective owners. Their use on this fan tribute site is not intended to infringe upon any intellectual property rights. If you are a rights holder and have concerns about specific content, please contact us and we will address them promptly.')}
+
+      {h('4. Accuracy of Information')}
+      {p('Fixture schedules, statistics, and other time-sensitive data are sourced from third-party services and are provided "as is". We make no warranties regarding accuracy, completeness, or timeliness. Always verify match details through official club or league channels.')}
+
+      {h('5. External Links')}
+      {p('This site may contain links to external websites including official club sites, retail partners, and social media profiles. We are not responsible for the content, privacy practices, or availability of those sites. Links are provided for convenience only.')}
+
+      {h('6. Limitation of Liability')}
+      {p('This website and its contents are provided without warranties of any kind, either express or implied. To the fullest extent permitted by law, we exclude all liability for any damages, losses, or claims arising from your use of or reliance on this site or its content.')}
+
+      {h('7. Changes')}
+      {p('We reserve the right to update these terms at any time. Your continued use of the website following any changes constitutes your acceptance of the updated terms.')}
+
+      {h('8. Governing Law')}
+      {p('These terms are governed by and construed in accordance with the laws of England and Wales. Any disputes arising in connection with these terms shall be subject to the exclusive jurisdiction of the courts of England and Wales.')}
+    </>
+  )
+}
+
+// ─── Privacy Policy ─────────────────────────────────────────────────────────
+function PrivacyContent() {
+  const h = (text: string) => (
+    <h3 style={{
+      fontFamily: 'Kegilka, serif', fontWeight: 400,
+      fontSize: 'clamp(1rem, 2vw, 1.3rem)', color: '#fff',
+      margin: '32px 0 10px', lineHeight: 1.1,
+    }}>{text}</h3>
+  )
+  const p = (text: string) => (
+    <p style={{
+      fontFamily: 'Mona Sans, sans-serif',
+      fontSize: 'clamp(0.8rem, 1vw, 0.88rem)',
+      lineHeight: 1.78, color: 'rgba(255,255,255,0.55)',
+      margin: '0 0 12px',
+    }}>{text}</p>
+  )
+
+  return (
+    <>
+      <h1 style={{
+        fontFamily: 'Kegilka, serif', fontWeight: 400,
+        fontSize: 'clamp(2rem, 4vw, 3.5rem)',
+        lineHeight: 0.92, color: '#fff', marginBottom: 8,
+      }}>
+        PRIVACY
+      </h1>
+      <h1 style={{
+        fontFamily: 'Mona Sans, sans-serif', fontWeight: 300,
+        fontSize: 'clamp(2rem, 4vw, 3.5rem)',
+        lineHeight: 0.92, color: '#fff', marginBottom: 40,
+      }}>
+        POLICY
+      </h1>
+
+      <p style={{
+        fontFamily: 'Mona Sans, sans-serif', fontSize: '0.72rem',
+        color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em',
+        textTransform: 'uppercase', marginBottom: 32,
+      }}>
+        Last updated: May 2026
+      </p>
+
+      {h('1. Overview')}
+      {p('This fan tribute website does not collect, store, or process any personal data from visitors. We are committed to protecting your privacy and being transparent about how this site operates.')}
+
+      {h('2. Data We Do Not Collect')}
+      {p('We do not collect your name, email address, IP address, location data, or any other personally identifiable information. We do not require you to create an account or provide any personal details to use this website.')}
+
+      {h('3. Cookies')}
+      {p('This site does not set any tracking, advertising, or analytics cookies. Your browser\'s session storage may be used to preserve basic UI state (such as open/closed menus) during your visit. This data exists only in your browser and is never transmitted to any server.')}
+
+      {h('4. Third-Party Services')}
+      {p('This site fetches match fixture data from third-party services including TheSportsDB, API-Football, and football-data.org. These requests are made server-side and your browser does not interact with those services directly. Each service has its own privacy policy which we encourage you to review.')}
+
+      {h('5. Embedded Content and Links')}
+      {p('Links to external sites (social media, retail partners, official club pages) are provided for convenience. Once you leave this site, you are subject to the privacy policies of those external sites. We have no control over and accept no responsibility for their practices.')}
+
+      {h('6. Analytics')}
+      {p('This site does not use Google Analytics, Meta Pixel, or any other analytics or tracking service. No data about your visit is captured or shared with third-party analytics providers.')}
+
+      {h('7. Children\'s Privacy')}
+      {p('This website does not knowingly collect any information from children under the age of 13. If you are under 13, please use this site only with the involvement of a parent or guardian.')}
+
+      {h('8. Changes to This Policy')}
+      {p('This privacy policy may be updated from time to time to reflect changes in how the site operates. Any updates will be reflected on this page.')}
+
+      {h('9. Governing Law')}
+      {p('This policy is governed by the laws of England and Wales. Any disputes relating to this policy shall be subject to the exclusive jurisdiction of the courts of England and Wales.')}
+    </>
+  )
+}
+
+// ─── Social link ─────────────────────────────────────────────────────────────
+const socials = [
+  { label: 'Instagram', href: 'https://www.instagram.com/bukayosaka87/' },
+  { label: 'Twitter / X', href: 'https://x.com/BukayoSaka87' },
+  { label: 'Facebook', href: 'https://web.facebook.com/BukayoSakaOfficial' },
+  { label: 'TikTok', href: 'https://www.tiktok.com/@bukayosaka87' },
+]
+
+// ─── Footer ──────────────────────────────────────────────────────────────────
+export default function Footer() {
+  const [mounted, setMounted] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
+
+  // Mirror of the hero shrink, but inverted: scroll-tied scale that grows from
+  // FixedBrand's final shrunken state (≈0.12) → full size as the footer enters view.
+  // Range: from "brand top hits viewport bottom" → "brand top hits viewport top".
+  const brandRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress: brandProgress } = useScroll({
+    target: brandRef,
+    offset: ['start end', 'start start'],
+  })
+  const brandScale = useTransform(brandProgress, [0, 0.5], [0.12, 1])
+
+  useEffect(() => { setMounted(true) }, [])
+
+  const year = new Date().getFullYear()
+
+  return (
+    <>
+      {mounted && createPortal(
+        <AnimatePresence>
+          {showTerms && (
+            <LegalOverlay key="terms" onClose={() => setShowTerms(false)}>
+              <TermsContent />
+            </LegalOverlay>
+          )}
+          {showPrivacy && (
+            <LegalOverlay key="privacy" onClose={() => setShowPrivacy(false)}>
+              <PrivacyContent />
+            </LegalOverlay>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      <footer
+        style={{ background: '#09090b', position: 'relative', overflow: 'hidden' }}
+      >
+        <GrainOverlay />
+
+        {/* Brand text — scale tracks scroll position (visible grow as footer enters view) */}
+        <motion.div
+          ref={brandRef}
+          className="px-4 md:px-6"
+          style={{
+            paddingTop: 80,
+            paddingBottom: 0,
+            scale: brandScale,
+            transformOrigin: 'bottom center',
+          }}
+        >
+          <svg
+            viewBox="0 0 1000 135"
+            className="block w-full overflow-visible"
+            preserveAspectRatio="xMidYMax meet"
+            aria-label="Bukayo Saka"
+          >
+            <text
+              x="0"
+              y="128"
+              textAnchor="start"
+              fontSize="155"
+              textLength="1000"
+              lengthAdjust="spacingAndGlyphs"
+              fill="#ffffff"
+              style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}
             >
-              The official digital home of Bukayo Saka — Arsenal No.7, England international, and a product of Ealing.
-            </p>
-            {/* Social */}
-            <div className="flex flex-col gap-3">
-              {socialLinks.map((s) => (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  className="flex items-center justify-between group"
-                >
-                  <span
-                    className="text-zinc-600 text-xs tracking-widest uppercase group-hover:text-white transition-colors"
-                    style={{ fontFamily: 'Urbanist, sans-serif' }}
-                  >
-                    {s.label}
-                  </span>
-                  <span
-                    className="text-zinc-500 text-xs group-hover:text-[#EF0107] transition-colors"
-                    style={{ fontFamily: 'Urbanist, sans-serif' }}
-                  >
-                    {s.handle}
-                  </span>
-                </a>
-              ))}
-            </div>
-          </div>
+              BUKAYO SAKA
+            </text>
+          </svg>
+        </motion.div>
 
-          {/* Navigation col */}
-          <div className="flex-1">
-            <p
-              className="text-zinc-700 text-xs tracking-[0.4em] uppercase mb-6"
-              style={{ fontFamily: 'Urbanist, sans-serif' }}
+        {/* ── Get in touch ── */}
+        <div
+          className="px-4 md:px-6 flex flex-col items-center text-center"
+          style={{ paddingTop: 140, paddingBottom: 120 }}
+        >
+          <div style={{ marginBottom: 20 }}>
+            <span
+              style={{
+                display: 'block',
+                fontFamily: 'Kegilka, serif',
+                fontSize: 'clamp(1.7rem, 3.6vw, 3.4rem)',
+                lineHeight: 0.88, fontWeight: 400, color: '#ffffff',
+              }}
             >
-              Navigate
-            </p>
-            <nav className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="text-zinc-500 hover:text-white text-sm tracking-wide uppercase transition-colors group flex items-center gap-2"
-                  style={{ fontFamily: 'Urbanist, sans-serif' }}
-                >
-                  <span className="text-[#EF0107] opacity-0 group-hover:opacity-100 transition-opacity text-xs">
-                    ▸
-                  </span>
-                  {link.label}
-                </a>
-              ))}
-            </nav>
+              GET IN
+            </span>
+            <span
+              style={{
+                display: 'block',
+                fontFamily: 'Mona Sans, sans-serif',
+                fontSize: 'clamp(1.7rem, 3.6vw, 3.4rem)',
+                lineHeight: 0.88, fontWeight: 300, color: '#ffffff',
+              }}
+            >
+              TOUCH
+            </span>
           </div>
 
-          {/* Tagline col */}
-          <div className="lg:w-64 flex-shrink-0 flex flex-col justify-between">
-            <div>
-              <p
-                className="text-zinc-700 text-xs tracking-[0.4em] uppercase mb-6"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
-              >
-                The Mantra
-              </p>
-              <blockquote
-                className="text-white text-3xl font-normal leading-tight"
-                style={{ fontFamily: 'Notable, serif' }}
-              >
-                From<br />
-                <span style={{ color: '#EF0107' }}>Ealing</span><br />
-                to the<br />
-                World.
-              </blockquote>
-            </div>
-            <div className="mt-8 pt-8 border-t border-white/5">
-              <a
-                href="#fixtures"
-                className="inline-flex items-center gap-2 px-6 py-3 border border-[#EF0107] text-[#EF0107] text-xs font-semibold uppercase tracking-wider hover:bg-[#EF0107] hover:text-white transition-all duration-300 w-full justify-center"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
-              >
-                View Next Match →
-              </a>
-            </div>
-          </div>
+          <p
+            style={{
+              fontFamily: 'Mona Sans, sans-serif',
+              fontSize: '0.875rem',
+              lineHeight: 1.72,
+              color: 'rgba(255,255,255,0.42)',
+              margin: '0 auto 28px',
+              maxWidth: 360,
+            }}
+          >
+            For press enquiries, partnerships, or anything else — reach out to the team.
+          </p>
+
+          <FillButton label="Contact Us" />
         </div>
 
-        {/* Bottom bar */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* ── Divider ── */}
+        <div
+          className="px-4 md:px-6"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+        />
+
+        {/* ── Bottom bar ── */}
+        <div
+          className="px-4 md:px-6 flex flex-col md:flex-row md:items-center gap-5 md:gap-0"
+          style={{ paddingTop: 24, paddingBottom: 32 }}
+        >
+          {/* Copyright */}
           <p
-            className="text-zinc-700 text-xs"
-            style={{ fontFamily: 'Urbanist, sans-serif' }}
+            className="text-center md:text-left"
+            style={{
+              fontFamily: 'Mona Sans, sans-serif',
+              fontSize: '0.68rem',
+              color: 'rgba(255,255,255,0.28)',
+              letterSpacing: '0.06em',
+              margin: 0,
+              flexShrink: 0,
+            }}
           >
-            © {new Date().getFullYear()} Bukayo Saka. All rights reserved.
+            © {year} Bukayo Saka. All rights reserved.
           </p>
-          <div className="flex items-center gap-6">
-            {['Privacy Policy', 'Terms', 'Press'].map((item) => (
+
+          {/* Socials */}
+          <div
+            className="flex-1 flex flex-wrap gap-x-8 gap-y-2 justify-center"
+          >
+            {socials.map((s) => (
               <a
-                key={item}
-                href="#"
-                className="text-zinc-700 hover:text-zinc-400 text-xs uppercase tracking-wider transition-colors"
-                style={{ fontFamily: 'Urbanist, sans-serif' }}
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-social"
+                style={{
+                  fontFamily: 'Mona Sans, sans-serif',
+                  fontSize: '0.68rem',
+                  color: 'rgba(255,255,255,0.45)',
+                  letterSpacing: '0.06em',
+                  textDecoration: 'none',
+                  position: 'relative',
+                  display: 'inline-block',
+                }}
               >
-                {item}
+                {s.label}
               </a>
             ))}
           </div>
-          <p
-            className="text-zinc-800 text-xs"
-            style={{ fontFamily: 'Urbanist, sans-serif' }}
+
+          {/* Legal links */}
+          <div
+            className="flex items-center gap-5 justify-center md:justify-end"
+            style={{ flexShrink: 0 }}
           >
-            Built with Next.js · Tailwind CSS · Framer Motion
-          </p>
+            <button
+              onClick={() => setShowTerms(true)}
+              className="footer-legal-btn"
+              style={{
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                fontFamily: 'Mona Sans, sans-serif',
+                fontSize: '0.68rem', letterSpacing: '0.06em',
+                color: 'rgba(255,255,255,0.28)',
+                position: 'relative', display: 'inline-block',
+              }}
+            >
+              Terms &amp; Conditions
+            </button>
+            <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.6rem' }}>|</span>
+            <button
+              onClick={() => setShowPrivacy(true)}
+              className="footer-legal-btn"
+              style={{
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                fontFamily: 'Mona Sans, sans-serif',
+                fontSize: '0.68rem', letterSpacing: '0.06em',
+                color: 'rgba(255,255,255,0.28)',
+                position: 'relative', display: 'inline-block',
+              }}
+            >
+              Privacy Policy
+            </button>
+          </div>
         </div>
-      </div>
-    </footer>
+
+        {/* ── Underline hover animations ── */}
+        <style jsx>{`
+          .footer-social::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.6);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+          .footer-social:hover {
+            color: rgba(255, 255, 255, 0.85);
+          }
+          .footer-social:hover::after {
+            transform: scaleX(1);
+          }
+          .footer-legal-btn::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.35);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+          .footer-legal-btn:hover {
+            color: rgba(255, 255, 255, 0.55) !important;
+          }
+          .footer-legal-btn:hover::after {
+            transform: scaleX(1);
+          }
+        `}</style>
+      </footer>
+    </>
   )
 }

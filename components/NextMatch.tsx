@@ -2,71 +2,84 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import type { MatchInfo } from '@/app/api/fixtures/route'
 
-// Shown immediately — no loading flicker. API silently replaces this.
+type MatchInfo = {
+  state: 'upcoming' | 'live' | 'finished' | 'halftime' | 'result'
+  homeTeam: string
+  awayTeam: string
+  homeTeamCrest: string
+  awayTeamCrest: string
+  homeScore: number | null
+  awayScore: number | null
+  minute: number | null
+  date: string
+  time: string
+  competition: string
+  venue: string
+}
+
 const INITIAL: MatchInfo = {
   state: 'upcoming',
   homeTeam: 'Arsenal',
-  awayTeam: 'Fulham',
-  homeTeamCrest: 'https://crests.football-data.org/57.png',
-  awayTeamCrest: 'https://crests.football-data.org/63.png',
+  awayTeam: 'PSG',
+  homeTeamCrest: 'https://media.api-sports.io/football/teams/42.png',
+  awayTeamCrest: 'https://media.api-sports.io/football/teams/85.png',
   homeScore: null,
   awayScore: null,
   minute: null,
-  date: '2026-05-02',
-  time: '15:00',
-  competition: 'Premier League',
-  venue: 'Emirates Stadium',
+  date: '2026-05-30',
+  time: '20:00',
+  competition: 'UEFA Champions League',
+  venue: 'Puskás Aréna, Budapest',
 }
 
-// ─── Crest silhouette badge ────────────────────────────────────────────────
-// Uses the real club crest, stripped of all colour via CSS filter so it
-// reads as a clean white (or Arsenal-red) outline on the dark background.
-function TeamBadge({ name, crestUrl }: { name: string; crestUrl: string }) {
-  const isArsenal = name.toLowerCase().includes('arsenal')
+// ─── Shared typography — mirrors the Tile component in overlay stats cards ──
+const LABEL: React.CSSProperties = {
+  fontFamily: 'Mona Sans, sans-serif',
+  fontSize: '0.55rem',
+  letterSpacing: '0.2em',
+  textTransform: 'uppercase',
+  color: 'rgba(255,255,255,0.55)',
+  fontWeight: 600,
+  whiteSpace: 'nowrap',
+}
 
-  // Arsenal: show the real crest unfiltered — on the dark bg the red logo reads
-  // exactly like the "dark embossed" reference look.
-  // All others: brightness(0) invert(1) strips every colour and produces a clean
-  // white silhouette — like the Atletico black-and-white reference image.
-  const filter = isArsenal ? 'none' : 'brightness(0) invert(1)'
+const VALUE: React.CSSProperties = {
+  fontFamily: 'Kegilka, serif',
+  fontSize: '1.35rem',
+  lineHeight: 1,
+  color: '#fff',
+  fontWeight: 400,
+  letterSpacing: '0.02em',
+}
 
+const TILE_H = 84
+
+// ─── Single grid cell ───────────────────────────────────────────────────────
+function Cell({
+  children,
+  style = {},
+}: {
+  children: React.ReactNode
+  style?: React.CSSProperties
+}) {
   return (
-    <div className="flex flex-col items-center gap-1.5 select-none" title={name}>
-      <div className="w-11 h-11 flex items-center justify-center">
-        {crestUrl ? (
-          <img
-            src={crestUrl}
-            alt={name}
-            className="w-full h-full object-contain"
-            style={{ filter }}
-            draggable={false}
-          />
-        ) : (
-          /* Text fallback if crest URL is unavailable */
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ border: `1.5px solid ${isArsenal ? '#EF0107' : 'rgba(255,255,255,0.3)'}` }}
-          >
-            <span
-              className="text-[9px] font-bold tracking-widest"
-              style={{
-                fontFamily: 'Urbanist, sans-serif',
-                color: isArsenal ? '#EF0107' : 'rgba(255,255,255,0.6)',
-              }}
-            >
-              {name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase()}
-            </span>
-          </div>
-        )}
-      </div>
-      <span
-        className="text-[8px] tracking-wider uppercase text-zinc-600 max-w-[60px] text-center leading-tight"
-        style={{ fontFamily: 'Urbanist, sans-serif' }}
-      >
-        {name.split(' ')[0]}
-      </span>
+    <div
+      style={{
+        border: '1px solid rgba(255,255,255,0.18)',
+        padding: '10px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        background: 'rgba(0,0,0,0.18)',
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
+        height: TILE_H,
+        boxSizing: 'border-box',
+        ...style,
+      }}
+    >
+      {children}
     </div>
   )
 }
@@ -79,6 +92,31 @@ function formatDate(date: string, time: string) {
     day: d.toLocaleDateString('en-GB', { day: 'numeric' }),
     month: d.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase(),
   }
+}
+
+function competitionShort(name: string) {
+  const lc = name.toLowerCase()
+  if (lc.includes('champions')) return 'UCL'
+  if (lc.includes('premier')) return 'PL'
+  if (lc.includes('fa cup')) return 'FA Cup'
+  if (lc.includes('league cup') || lc.includes('carabao')) return 'EFL Cup'
+  if (lc.includes('community')) return 'Com. Shield'
+  return name.split(' ').map(w => w[0]).join('').slice(0, 4).toUpperCase()
+}
+
+// First word of team name, handles common abbreviations
+function shortName(name: string) {
+  if (name.toLowerCase().includes('manchester city')) return 'Man City'
+  if (name.toLowerCase().includes('manchester united')) return 'Man Utd'
+  if (name.toLowerCase().includes('newcastle')) return 'Newcastle'
+  if (name.toLowerCase().includes('tottenham')) return 'Spurs'
+  if (name.toLowerCase().includes('west ham')) return 'West Ham'
+  if (name.toLowerCase().includes('crystal palace')) return 'C. Palace'
+  if (name.toLowerCase().includes('aston villa')) return 'Aston Villa'
+  if (name.toLowerCase().includes('nottingham')) return "Nott'm F"
+  if (name.toLowerCase().includes('paris')) return 'PSG'
+  if (name.toLowerCase().includes('real madrid')) return 'Real Madrid'
+  return name.split(' ')[0]
 }
 
 // ─── Component ────────────────────────────────────────────────────────────
@@ -94,109 +132,101 @@ export default function NextMatch() {
         .catch(() => {})
     }
     load()
-    // Re-poll every 45 s so live scores update automatically
     const id = setInterval(load, 45_000)
     return () => { cancelled = true; clearInterval(id) }
   }, [])
 
   const { weekday, day, month } = formatDate(match.date, match.time)
   const isScored = match.state === 'live' || match.state === 'halftime' || match.state === 'result'
+  const isUCL = match.competition.toLowerCase().includes('champions')
+  const compCode = competitionShort(match.competition)
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.9, delay: 2.2, ease: [0.22, 1, 0.36, 1] }}
-      className="w-[280px] md:w-[340px]"
+      style={{ width: 'min(380px, 100%)' }}
     >
-      {/* State label — 16 px gap to card below */}
-      <div className="flex items-center gap-2 mb-4">
-        {match.state === 'live' ? (
-          <>
-            <motion.span
-              animate={{ opacity: [1, 0.25, 1] }}
-              transition={{ duration: 0.9, repeat: Infinity }}
-              className="w-1.5 h-1.5 rounded-full bg-[#EF0107] flex-shrink-0"
-            />
-            <span className="text-[#EF0107] text-[10px] tracking-[0.4em] uppercase font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-              Live
-            </span>
-            {match.minute && (
-              <span className="text-zinc-500 text-[10px] font-mono">{match.minute}</span>
-            )}
-          </>
-        ) : match.state === 'halftime' ? (
-          <>
-            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />
-            <span className="text-yellow-400 text-[10px] tracking-[0.4em] uppercase font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-              Half Time
-            </span>
-          </>
-        ) : match.state === 'result' ? (
-          <>
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0" />
-            <span className="text-zinc-400 text-[10px] tracking-[0.4em] uppercase font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-              Full Time
-            </span>
-          </>
-        ) : (
-          <>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0 }}>
+
+        {/* ── Row 1, Col 1: blinking dot + "Next Match" — vertically centered ── */}
+        <Cell style={{ justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <motion.span
               animate={{ opacity: [1, 0.25, 1], scale: [1, 1.2, 1] }}
               transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-1.5 h-1.5 rounded-full bg-[#EF0107] flex-shrink-0"
+              style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: '#EF0107', flexShrink: 0, display: 'inline-block',
+              }}
             />
-            <span className="text-[#EF0107] text-[10px] tracking-[0.4em] uppercase font-bold" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-              Next Match
+            <span style={LABEL}>
+              {match.state === 'live' ? 'Live' : match.state === 'result' ? 'Full Time' : 'Next Match'}
             </span>
-          </>
-        )}
-      </div>
-
-      {/* Card */}
-      <div className="border border-white/10 bg-black/30 backdrop-blur-sm overflow-hidden">
-        <div className="h-px w-full bg-gradient-to-r from-[#EF0107] via-[#EF0107]/50 to-transparent" />
-
-        {/* Badge | score/time | Badge */}
-        <div className="flex items-center px-5 py-4 gap-3">
-          <TeamBadge name={match.homeTeam} crestUrl={match.homeTeamCrest} />
-
-          <div className="flex-1 flex flex-col items-center">
-            {isScored ? (
-              <motion.div
-                key={`${match.homeScore}-${match.awayScore}`}
-                initial={{ scale: 0.85, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex items-baseline gap-2"
-              >
-                <span className="text-white text-3xl font-normal leading-none tabular-nums" style={{ fontFamily: 'Notable, serif' }}>
-                  {match.homeScore ?? 0}
-                </span>
-                <span className="text-zinc-600 text-base">–</span>
-                <span className="text-white text-3xl font-normal leading-none tabular-nums" style={{ fontFamily: 'Notable, serif' }}>
-                  {match.awayScore ?? 0}
-                </span>
-              </motion.div>
-            ) : (
-              <>
-                <span className="text-white text-2xl font-normal leading-none tracking-wide" style={{ fontFamily: 'Notable, serif' }}>
-                  {match.time}
-                </span>
-                <span className="text-zinc-500 text-[9px] tracking-[0.3em] uppercase mt-1.5" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                  {weekday} {day} {month}
-                </span>
-              </>
-            )}
           </div>
+        </Cell>
 
-          <TeamBadge name={match.awayTeam} crestUrl={match.awayTeamCrest} />
-        </div>
+        {/* ── Row 1, Col 2+3: Home vs Away — crests + names, centered ── */}
+        <Cell style={{ gridColumn: 'span 2', borderLeft: 'none', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
 
-        <div className="border-t border-white/[0.07] px-5 py-2">
-          <span className="text-zinc-600 text-[9px] tracking-[0.3em] uppercase" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-            {match.competition}
+            {/* Home team */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {match.homeTeamCrest && (
+                <img src={match.homeTeamCrest} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+              )}
+              <span style={{ fontFamily: 'Kegilka, serif', fontSize: '0.9rem', color: '#fff', fontWeight: 400, whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
+                {shortName(match.homeTeam)}
+              </span>
+            </div>
+
+            {/* VS / Score */}
+            {isScored ? (
+              <span style={{ fontFamily: 'Kegilka, serif', fontSize: '1.3rem', color: '#fff', fontWeight: 400, letterSpacing: '0.06em', flexShrink: 0 }}>
+                {match.homeScore}&nbsp;–&nbsp;{match.awayScore}
+              </span>
+            ) : (
+              <span style={{ ...LABEL, color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>vs</span>
+            )}
+
+            {/* Away team */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {match.awayTeamCrest && (
+                <img src={match.awayTeamCrest} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+              )}
+              <span style={{ fontFamily: 'Kegilka, serif', fontSize: '0.9rem', color: '#fff', fontWeight: 400, whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
+                {shortName(match.awayTeam)}
+              </span>
+            </div>
+
+          </div>
+        </Cell>
+
+        {/* ── Row 2, Col 1: Competition ── */}
+        <Cell style={{ borderTop: 'none' }}>
+          <span style={LABEL}>Competition</span>
+          <span style={{ ...VALUE, color: '#fff', fontSize: '1.2rem' }}>
+            {compCode}
           </span>
-        </div>
+        </Cell>
+
+        {/* ── Row 2, Col 2: Kick-off time ── */}
+        <Cell style={{ borderTop: 'none', borderLeft: 'none' }}>
+          <span style={LABEL}>Kick-Off</span>
+          <span style={VALUE}>
+            {isScored && match.state === 'live' && match.minute ? `${match.minute}'` : match.time}
+          </span>
+        </Cell>
+
+        {/* ── Row 2, Col 3: Date ── */}
+        <Cell style={{ borderTop: 'none', borderLeft: 'none' }}>
+          <span style={LABEL}>Date</span>
+          <span style={{ ...VALUE, fontSize: '1rem' }}>
+            {weekday} {day} {month}
+          </span>
+        </Cell>
+
       </div>
     </motion.div>
   )

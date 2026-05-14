@@ -1,218 +1,318 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 
-const trophies = [
-  {
-    icon: '🏆',
-    title: 'FA Cup',
-    year: '2020',
-    type: 'Team',
-    color: '#EF0107',
-    desc: 'Arsenal 2–1 Chelsea. Wembley. His first major senior honour.',
-  },
-  {
-    icon: '🛡️',
-    title: 'Community Shield',
-    year: '2020',
-    type: 'Team',
-    color: '#EF0107',
-    desc: 'Arsenal 1–1 (5–4 pens) Liverpool. A statement before the season started.',
-  },
-  {
-    icon: '🛡️',
-    title: 'Community Shield',
-    year: '2023',
-    type: 'Team',
-    color: '#EF0107',
-    desc: 'Arsenal 4–1 Manchester City. Title challengers announcing themselves.',
-  },
-  {
-    icon: '⭐',
-    title: 'PFA Young Player of the Year',
-    year: '2022',
-    type: 'Individual',
-    color: '#C0C0C0',
-    desc: 'Voted by his peers — the highest form of respect in professional football.',
-  },
-  {
-    icon: '🔴',
-    title: 'Arsenal Player of the Season',
-    year: '2021/22',
-    type: 'Individual',
-    color: '#EF0107',
-    desc: 'Dominant from wide right. The team\'s most influential player by far.',
-  },
-  {
-    icon: '🔴',
-    title: 'Arsenal Player of the Season',
-    year: '2022/23',
-    type: 'Individual',
-    color: '#EF0107',
-    desc: 'Back-to-back. Consistency is the mark of a true elite performer.',
-  },
-  {
-    icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-    title: 'England Men\'s Player of the Year',
-    year: '2023',
-    type: 'Individual',
-    color: '#C0C0C0',
-    desc: 'National recognition for an international-class season.',
-  },
-  {
-    icon: '⚡',
-    title: 'Premier League Player of Month',
-    year: 'Multiple',
-    type: 'Individual',
-    color: '#C0C0C0',
-    desc: 'A consistent presence in monthly awards throughout his career.',
-  },
+const ease = [0.16, 1, 0.3, 1] as const
+
+type Award = {
+  label: string
+  count: number
+  image: string
+  years: string
+}
+
+const AWARDS: Award[] = [
+  { label: 'FA Cup Wins',                         count: 1, image: '/FA Cup Win.png',                            years: '2020' },
+  { label: 'Community Shield',                    count: 2, image: '/Community Shield.png',                      years: '2020, 2023' },
+  { label: 'PFA Young Player of the Year',        count: 1, image: '/PFA Young player of the year.png',          years: '2022' },
+  { label: 'Arsenal Player of the Season',        count: 2, image: '/Arsenal P;ayer of the season.png',          years: '2021/22, 2022/23' },
+  { label: 'Premiere League Player of the Month', count: 1, image: '/Premiere league player of the month.jpg',   years: 'March 2023' },
 ]
 
-export default function TrophyCabinet() {
-  const team = trophies.filter((t) => t.type === 'Team')
-  const individual = trophies.filter((t) => t.type === 'Individual')
+const IMAGE_HEIGHT = 'clamp(180px, 35vh, 320px)'
+
+// ── Thin diagonal hand-drawn slash ────────────────────────────────
+function DiagonalBrush({ active }: { active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      style={{
+        position: 'absolute',
+        left: '-12%',
+        top: '-12%',
+        width: '124%',
+        height: '124%',
+        pointerEvents: 'none',
+        overflow: 'visible',
+      }}
+      aria-hidden
+    >
+      <defs>
+        <filter id="brush-jitter" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="fractalNoise" baseFrequency="1.8" numOctaves="2" seed="4" />
+          <feDisplacementMap in="SourceGraphic" scale="1.6" />
+        </filter>
+      </defs>
+      {/* Single thin diagonal stroke, top-left → bottom-right with slight wobble */}
+      <path
+        d="M 8 88 Q 38 64, 60 44 T 92 12"
+        stroke="#EF0107"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.95"
+        filter="url(#brush-jitter)"
+        style={{
+          strokeDasharray: 140,
+          strokeDashoffset: active ? 0 : 140,
+          transition: active
+            ? 'stroke-dashoffset 0.7s cubic-bezier(0.55, 0.05, 0.25, 1)'
+            : 'stroke-dashoffset 0.3s ease-in',
+        }}
+      />
+    </svg>
+  )
+}
+
+// ── Stat counter cell ────────────────────────────────────────────
+function StatCell({
+  award,
+  active,
+  onActivate,
+  hoverable,
+  index,
+}: {
+  award: Award
+  active: boolean
+  onActivate: () => void
+  hoverable: boolean
+  index: number
+}) {
+  return (
+    <motion.button
+      onMouseEnter={hoverable ? onActivate : undefined}
+      onFocus={hoverable ? onActivate : undefined}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.7, ease, delay: 0.15 + index * 0.07 }}
+      className="text-left relative cursor-default"
+      style={{ background: 'none', border: 'none', padding: 0, color: 'inherit' }}
+    >
+      <div
+        style={{
+          fontFamily: 'Mona Sans, sans-serif',
+          fontSize: '0.72rem',
+          letterSpacing: '0.16em',
+          textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.78)',
+          fontWeight: 500,
+          marginBottom: 12,
+          lineHeight: 1.35,
+          // Allow wrapping into multiple lines (matches reference)
+          maxWidth: '14ch',
+        }}
+      >
+        {award.label}
+      </div>
+      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
+        <span
+          style={{
+            fontFamily: 'Kegilka, serif',
+            fontSize: 'clamp(3.5rem, 7vw, 7rem)',
+            lineHeight: 0.92,
+            color: '#fff',
+            fontWeight: 400,
+          }}
+        >
+          {award.count}
+        </span>
+        <span
+          style={{
+            fontFamily: 'Kegilka, serif',
+            fontSize: 'clamp(1.1rem, 2vw, 2rem)',
+            lineHeight: 0.92,
+            color: 'rgba(255,255,255,0.85)',
+            fontWeight: 400,
+            marginLeft: 4,
+          }}
+        >
+          x
+        </span>
+        <DiagonalBrush active={active} />
+      </div>
+    </motion.button>
+  )
+}
+
+// ── Main section ─────────────────────────────────────────────────
+type Props = { inOverlay?: boolean }
+
+export default function TrophyCabinet({ inOverlay = false }: Props) {
+  const [active, setActive] = useState(0)
+  const stat = AWARDS[active]
 
   return (
     <section
       id="trophies"
-      className="relative w-full py-32 px-4 md:px-6 overflow-hidden"
+      className="relative w-full overflow-hidden"
+      style={{
+        // 24px web, 16px mobile — consistent on all sides
+        padding: 'clamp(16px, 2vw, 24px)',
+        background: inOverlay ? 'transparent' : '#7B1218',
+        height: '100vh',
+        minHeight: '600px',
+        boxSizing: 'border-box',
+      }}
     >
-      {/* Bg texture lines */}
-      <div className="absolute inset-0 pointer-events-none opacity-5">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute left-0 right-0 border-t border-white"
-            style={{ top: `${i * 10}%` }}
+      <div
+        className="trophy-grid"
+        style={{
+          gap: 32,
+          height: '100%',
+        }}
+      >
+        {/* LEFT: header + image + year */}
+        <div className="trophy-left" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <motion.header
+            initial={{ opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.75, ease }}
+          >
+            <h2
+              style={{
+                fontFamily: 'Kegilka, serif',
+                fontWeight: 400,
+                fontSize: 'clamp(1.5rem, 2.8vw, 2.6rem)',
+                lineHeight: 1.05,
+                color: '#fff',
+                margin: 0,
+                letterSpacing: '-0.005em',
+              }}
+            >
+              TROPHIES &amp;
+              <br />
+              INDIVIDUAL AWARDS
+            </h2>
+          </motion.header>
+
+          {/* Image — hidden on mobile, fixed height on web */}
+          <motion.div
+            className="trophy-image-wrap"
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.75, ease, delay: 0.1 }}
+            style={{ height: IMAGE_HEIGHT, position: 'relative', overflow: 'hidden' }}
+          >
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={stat.image}
+                src={stat.image}
+                alt={stat.label}
+                initial={{ opacity: 0, scale: 1.03 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                  height: IMAGE_HEIGHT,
+                  width: 'auto',
+                  display: 'block',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                }}
+                draggable={false}
+              />
+            </AnimatePresence>
+          </motion.div>
+
+          <div className="trophy-image-wrap" style={{ minHeight: 24 }}>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={stat.years}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  fontFamily: 'Mona Sans, sans-serif',
+                  fontSize: '0.95rem',
+                  color: 'rgba(255,255,255,0.78)',
+                  fontWeight: 400,
+                  display: 'inline-block',
+                }}
+              >
+                {stat.years}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* RIGHT: 3×2 grid of stats, pushed to the far right */}
+        <div
+          className="trophy-stats"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, max-content)', // overridden in CSS
+            justifyContent: 'end',
+            justifySelf: 'end',
+            columnGap: 'clamp(16px, 3vw, 48px)',
+            rowGap: 'clamp(16px, 2vw, 24px)', // tightened row gap so 3 rows fit
+            marginTop: 'auto',
+          }}
+        >
+          {AWARDS.map((a, i) => (
+            <StatCell
+              key={i}
+              award={a}
+              active={active === i}
+              onActivate={() => setActive(i)}
+              hoverable
+              index={i}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Preload images to prevent hover delay */}
+      <div style={{ display: 'none' }}>
+        {AWARDS.map((award) => (
+          <Image
+            key={award.image}
+            src={award.image}
+            alt={award.label}
+            width={100}
+            height={100}
+            priority
+            unoptimized
           />
         ))}
       </div>
 
-      {/* Section header */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
-        transition={{ duration: 0.8 }}
-        className="mb-20 relative z-10"
-      >
-        <p
-          className="text-[#EF0107] text-xs tracking-[0.4em] uppercase mb-4"
-          style={{ fontFamily: 'Urbanist, sans-serif' }}
-        >
-          Honours &amp; Accolades
-        </p>
-        <h2
-          className="text-6xl md:text-8xl lg:text-[9vw] leading-none font-normal"
-          style={{ fontFamily: 'Notable, serif' }}
-        >
-          <span className="text-white">TROPHY</span>
-          <br />
-          <span style={{ WebkitTextStroke: '2px #EF0107', color: 'transparent' }}>
-            CABINET
-          </span>
-        </h2>
-      </motion.div>
-
-      {/* Team trophies */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-        className="relative z-10 mb-12"
-      >
-        <p
-          className="text-zinc-500 text-xs tracking-[0.4em] uppercase mb-6"
-          style={{ fontFamily: 'Urbanist, sans-serif' }}
-        >
-          Team Trophies
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {team.map((trophy, i) => (
-            <TrophyCard key={`${trophy.title}-${trophy.year}`} trophy={trophy} index={i} />
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Divider */}
-      <div className="relative z-10 flex items-center gap-6 my-12">
-        <div className="flex-1 h-px bg-white/10" />
-        <span
-          className="text-zinc-700 text-xs tracking-[0.4em] uppercase"
-          style={{ fontFamily: 'Urbanist, sans-serif' }}
-        >
-          Individual Awards
-        </span>
-        <div className="flex-1 h-px bg-white/10" />
-      </div>
-
-      {/* Individual trophies */}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {individual.map((trophy, i) => (
-          <TrophyCard key={`${trophy.title}-${trophy.year}`} trophy={trophy} index={i + team.length} />
-        ))}
-      </div>
+      <style jsx>{`
+        .trophy-grid {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: space-between;
+        }
+        @media (min-width: 768px) {
+          .trophy-grid {
+            flex-direction: row;
+          }
+          .trophy-left  { flex: 0 0 auto; max-width: 38%; }
+          /* Stats hug the right edge AND sit at the bottom */
+          .trophy-stats {
+            margin-left: auto;
+            align-self: flex-end;
+            grid-template-columns: repeat(2, max-content) !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .trophy-image-wrap { display: none; }
+          .trophy-stats {
+            margin-left: 0;
+            justify-content: center !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+        }
+      `}</style>
     </section>
-  )
-}
-
-function TrophyCard({
-  trophy,
-  index,
-}: {
-  trophy: (typeof trophies)[number]
-  index: number
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.95 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.5, delay: index * 0.06 }}
-      whileHover={{ y: -4 }}
-      className="relative border border-white/10 p-6 flex flex-col gap-3 group cursor-default hover:border-white/20 transition-all duration-300 overflow-hidden"
-    >
-      {/* Hover glow */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        style={{
-          background: `radial-gradient(circle at 50% 0%, ${trophy.color}15, transparent 70%)`,
-        }}
-      />
-
-      {/* Top accent */}
-      <div
-        className="absolute top-0 left-0 right-0 h-0.5 scale-x-0 group-hover:scale-x-100 transition-transform duration-400 origin-left"
-        style={{ background: trophy.color }}
-      />
-
-      <div className="text-3xl" role="img" aria-label={trophy.title}>
-        {trophy.icon}
-      </div>
-
-      <div>
-        <div
-          className="text-white font-normal text-base leading-snug"
-          style={{ fontFamily: 'Notable, serif' }}
-        >
-          {trophy.title}
-        </div>
-        <div
-          className="text-xs mt-0.5 font-medium"
-          style={{ color: trophy.color, fontFamily: 'Urbanist, sans-serif' }}
-        >
-          {trophy.year}
-        </div>
-      </div>
-
-      <p
-        className="text-zinc-600 text-xs leading-relaxed group-hover:text-zinc-500 transition-colors"
-        style={{ fontFamily: 'Urbanist, sans-serif' }}
-      >
-        {trophy.desc}
-      </p>
-    </motion.div>
   )
 }

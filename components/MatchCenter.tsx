@@ -1,7 +1,7 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
+import GrainOverlay from './GrainOverlay'
 
 type Fixture = {
   homeTeam: string
@@ -16,134 +16,179 @@ type Fixture = {
 }
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
+  const d = new Date(dateStr + 'T12:00:00Z')
   return {
-    day: d.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase(),
-    date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-    full: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+    weekday: d.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase(),
+    day: d.toLocaleDateString('en-GB', { day: 'numeric' }),
+    month: d.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase(),
   }
 }
 
-function FixtureCard({ fixture, index, isFeatured }: { fixture: Fixture; index: number; isFeatured: boolean }) {
-  const { day, date } = formatDate(fixture.date)
-  const isChampionsLeague = fixture.competition.toLowerCase().includes('champions')
-  const accentColor = isChampionsLeague ? '#EF0107' : '#C0C0C0'
+function normalizeCompetition(name: string): string {
+  const lc = name.toLowerCase()
+  if (lc.includes('english premier') || lc === 'premier league') return 'Premier League'
+  if (lc.includes('premier league')) return 'Premier League'
+  if (lc.includes('champions league') || lc.includes('champions')) return 'UEFA Champions League'
+  if (lc.includes('fa cup')) return 'FA Cup'
+  if (lc.includes('carabao') || lc.includes('league cup') || lc.includes('efl')) return 'EFL Cup'
+  if (lc.includes('community shield')) return 'Community Shield'
+  if (lc.includes('europa league')) return 'UEFA Europa League'
+  return name
+}
+
+function shortTeamName(name: string): string {
+  const lc = name.toLowerCase()
+  if (lc.includes('manchester city')) return 'Man City'
+  if (lc.includes('manchester united')) return 'Man Utd'
+  if (lc.includes('newcastle')) return 'Newcastle'
+  if (lc.includes('tottenham')) return 'Spurs'
+  if (lc.includes('west ham')) return 'West Ham'
+  if (lc.includes('crystal palace')) return 'C. Palace'
+  if (lc.includes('aston villa')) return 'A. Villa'
+  if (lc.includes('nottingham')) return "Nott'm F"
+  if (lc.includes('paris')) return 'PSG'
+  if (lc.includes('real madrid')) return 'Real Madrid'
+  if (lc.includes('atletico') || lc.includes('atlético')) return 'Atlético'
+  if (lc.includes('borussia dortmund')) return 'Dortmund'
+  if (lc.includes('internazionale')) return 'Inter Milan'
+  return name.split(' ')[0]
+}
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontFamily: 'Mona Sans, sans-serif',
+  fontSize: '0.55rem',
+  letterSpacing: '0.2em',
+  textTransform: 'uppercase',
+  color: 'rgba(255,255,255,0.65)',
+  fontWeight: 600,
+  textAlign: 'center',
+}
+
+function FixtureCard({ fixture, index }: { fixture: Fixture; index: number }) {
+  const { weekday, day, month } = formatDate(fixture.date)
+  const competition = normalizeCompetition(fixture.competition)
+  const hasAltBg = index % 2 === 0
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -30 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.6, delay: index * 0.08 }}
-      className={`relative border overflow-hidden group transition-all duration-400 hover:bg-white/[0.02] ${
-        isFeatured ? 'border-[#EF0107]/50' : 'border-white/10 hover:border-white/20'
-      }`}
+    <div
+      style={{
+        background: hasAltBg ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
-      {/* Featured banner */}
-      {isFeatured && (
-        <div className="flex items-center gap-2 px-5 py-2 bg-[#EF0107] w-full">
-          <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          <span
-            className="text-white text-xs font-semibold tracking-widest uppercase"
-            style={{ fontFamily: 'Urbanist, sans-serif' }}
-          >
-            Next Up — Don&apos;t Miss It
-          </span>
+      {/* ── Teams ── */}
+      <div
+        style={{
+          padding: '16px 12px 14px',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        {/* Home team */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          {fixture.homeTeamCrest && (
+            <img src={fixture.homeTeamCrest} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+          )}
+          <span style={LABEL_STYLE}>{shortTeamName(fixture.homeTeam)}</span>
         </div>
-      )}
 
-      <div className="flex items-center gap-0 p-0">
-        {/* Date panel */}
-        <div className="flex-shrink-0 w-20 md:w-28 flex flex-col items-center justify-center border-r border-white/10 py-6 px-3 text-center">
+        {/* VS + venue */}
+        <div
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 6,
+            paddingInline: 8,
+            minWidth: 56,
+          }}
+        >
           <span
-            className="text-zinc-600 text-xs tracking-widest uppercase block"
-            style={{ fontFamily: 'Urbanist, sans-serif' }}
-          >
-            {day}
-          </span>
-          <span
-            className="text-white text-lg md:text-xl font-normal leading-tight mt-1"
-            style={{ fontFamily: 'Notable, serif' }}
-          >
-            {date}
-          </span>
-          <span
-            className="text-xs mt-2 font-semibold px-2 py-0.5"
             style={{
-              color: accentColor,
-              fontFamily: 'Urbanist, sans-serif',
-              border: `1px solid ${accentColor}40`,
+              fontFamily: 'Kegilka, serif',
+              fontSize: '0.9rem',
+              color: 'rgba(255,255,255,0.38)',
+              lineHeight: 1,
             }}
           >
-            {isChampionsLeague ? 'UCL' : 'PL'}
+            VS
           </span>
+          {fixture.venue && (
+            <span
+              style={{
+                fontFamily: 'Mona Sans, sans-serif',
+                fontSize: '0.42rem',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.25)',
+                textAlign: 'center',
+                maxWidth: 72,
+                lineHeight: 1.45,
+              }}
+            >
+              {fixture.venue.split(',')[0]}
+            </span>
+          )}
         </div>
 
-        {/* Match info with crests */}
-        <div className="flex-1 px-5 md:px-8 py-5">
-          <p
-            className="text-zinc-600 text-xs tracking-widest uppercase mb-2"
-            style={{ fontFamily: 'Urbanist, sans-serif' }}
-          >
-            {fixture.competition}
-          </p>
-          <div className="flex items-center gap-3 md:gap-5">
-            {/* Home crest — Arsenal original colors, others white silhouette */}
-            <img
-              src={fixture.homeTeamCrest}
-              alt={fixture.homeTeam}
-              className="w-6 h-6 md:w-8 md:h-8 object-contain"
-              style={{ filter: fixture.homeTeam.toLowerCase().includes('arsenal') ? 'none' : 'brightness(0) invert(1)' }}
-              loading="lazy"
-            />
-            <span
-              className="text-white text-base md:text-xl font-normal leading-none"
-              style={{ fontFamily: 'Notable, serif' }}
-            >
-              {fixture.homeTeam}
-            </span>
-            <span
-              className="text-zinc-600 text-sm font-light"
-              style={{ fontFamily: 'Urbanist, sans-serif' }}
-            >
-              vs
-            </span>
-            <span
-              className="text-white text-base md:text-xl font-normal leading-none"
-              style={{ fontFamily: 'Notable, serif' }}
-            >
-              {fixture.awayTeam}
-            </span>
-            {/* Away crest */}
-            <img
-              src={fixture.awayTeamCrest}
-              alt={fixture.awayTeam}
-              className="w-6 h-6 md:w-8 md:h-8 object-contain"
-              style={{ filter: fixture.awayTeam.toLowerCase().includes('arsenal') ? 'none' : 'brightness(0) invert(1)' }}
-              loading="lazy"
-            />
-          </div>
-          <div className="flex items-center gap-4 mt-2">
-            <p
-              className="text-zinc-600 text-xs"
-              style={{ fontFamily: 'Urbanist, sans-serif' }}
-            >
-              {fixture.time} BST · {fixture.venue}
-            </p>
-          </div>
-        </div>
-
-        {/* Right arrow */}
-        <div className="flex-shrink-0 pr-5 md:pr-8">
-          <div
-            className="w-8 h-8 border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1"
-            style={{ borderColor: accentColor, color: accentColor }}
-          >
-            →
-          </div>
+        {/* Away team */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          {fixture.awayTeamCrest && (
+            <img src={fixture.awayTeamCrest} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+          )}
+          <span style={LABEL_STYLE}>{shortTeamName(fixture.awayTeam)}</span>
         </div>
       </div>
-    </motion.div>
+
+      {/* ── Divider ── */}
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
+
+      {/* ── Date + competition ── */}
+      <div style={{ padding: '12px 16px', textAlign: 'center' }}>
+        <span
+          style={{
+            display: 'block',
+            fontFamily: 'Mona Sans, sans-serif',
+            fontSize: '0.48rem',
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.32)',
+            marginBottom: 3,
+          }}
+        >
+          {weekday}
+        </span>
+        <span
+          style={{
+            display: 'block',
+            fontFamily: 'Kegilka, serif',
+            fontSize: 'clamp(1.1rem, 2vw, 1.3rem)',
+            color: '#ffffff',
+            fontWeight: 400,
+            lineHeight: 1.05,
+            marginBottom: 6,
+          }}
+        >
+          {day} {month}
+        </span>
+        <span
+          style={{
+            display: 'block',
+            fontFamily: 'Mona Sans, sans-serif',
+            fontSize: '0.45rem',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.35)',
+            lineHeight: 1.4,
+          }}
+        >
+          {competition}
+        </span>
+      </div>
+    </div>
   )
 }
 
@@ -160,60 +205,98 @@ export default function MatchCenter() {
   return (
     <section
       id="fixtures"
-      className="relative w-full py-32 px-4 md:px-6"
+      style={{ background: '#09090b', position: 'relative' }}
     >
-      {/* Section header */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
-        transition={{ duration: 0.8 }}
-        className="mb-20"
-      >
-        <p
-          className="text-[#EF0107] text-xs tracking-[0.4em] uppercase mb-4"
-          style={{ fontFamily: 'Urbanist, sans-serif' }}
-        >
-          Events &amp; Fixtures
-        </p>
-        <h2
-          className="text-6xl md:text-8xl lg:text-[9vw] leading-none font-normal"
-          style={{ fontFamily: 'Notable, serif' }}
-        >
-          <span className="text-white">MATCH</span>
-          <br />
-          <span style={{ WebkitTextStroke: '2px white', color: 'transparent' }}>
+      <GrainOverlay />
+
+      <div className="px-4 md:px-6" style={{ paddingTop: 88, paddingBottom: 64 }}>
+
+        {/* ── Heading ── */}
+        <div style={{ marginBottom: 14 }}>
+          <span
+            style={{
+              display: 'block',
+              fontFamily: 'Kegilka, serif',
+              fontSize: 'clamp(2.2rem, 5vw, 5rem)',
+              lineHeight: 0.88,
+              fontWeight: 400,
+              color: '#ffffff',
+            }}
+          >
+            MATCH
+          </span>
+          <span
+            style={{
+              display: 'block',
+              fontFamily: 'Mona Sans, sans-serif',
+              fontSize: 'clamp(2.2rem, 5vw, 5rem)',
+              lineHeight: 0.88,
+              fontWeight: 300,
+              color: '#ffffff',
+            }}
+          >
             CENTRE
           </span>
-        </h2>
-      </motion.div>
+        </div>
 
-      {/* Fixtures */}
-      <div>
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="flex items-center gap-4 mb-6"
+        {/* ── Subtitle ── */}
+        <p
+          style={{
+            fontFamily: 'Mona Sans, sans-serif',
+            fontSize: 'clamp(0.7rem, 0.9vw, 0.82rem)',
+            lineHeight: 1.65,
+            color: 'rgba(255,255,255,0.38)',
+            marginBottom: 24,
+            maxWidth: 480,
+          }}
         >
-          <div className="w-3 h-3 rounded-full bg-[#EF0107]" />
+          Stay connected with all the action — upcoming fixtures and events for
+          Arsenal and the England national team.
+        </p>
+
+        {/* ── Arsenal FC label ── */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              width: 6, height: 6,
+              borderRadius: '50%',
+              background: '#EF0107',
+              flexShrink: 0,
+            }}
+          />
           <span
-            className="text-white text-sm tracking-widest uppercase font-medium"
-            style={{ fontFamily: 'Urbanist, sans-serif' }}
+            style={{
+              fontFamily: 'Mona Sans, sans-serif',
+              fontSize: '0.55rem',
+              letterSpacing: '0.25em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.42)',
+              fontWeight: 600,
+            }}
           >
             Arsenal FC
           </span>
-          <div className="flex-1 h-px bg-white/10" />
-        </motion.div>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+        </div>
 
-        <div className="flex flex-col gap-3">
+        {/* ── 4-column card grid ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {fixtures.map((f, i) => (
-            <FixtureCard key={f.date + f.homeTeam} fixture={f} index={i} isFeatured={i === 0} />
+            <FixtureCard
+              key={f.date + f.homeTeam + f.awayTeam}
+              fixture={f}
+              index={i}
+            />
           ))}
         </div>
       </div>
-
     </section>
   )
 }

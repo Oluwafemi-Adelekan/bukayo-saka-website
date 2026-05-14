@@ -1,8 +1,22 @@
 @import "tailwindcss";
 
+/* ── Kegilka — self-hosted from /public/fonts/. We prefer the OTF (better
+   rendering for display type); the TTF is a backup. */
+@font-face {
+  font-family: 'Kegilka';
+  src: url('/fonts/Kegilka.otf') format('opentype'),
+       url('/fonts/Kegilka.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --font-notable: 'Notable', serif;
-  --font-urbanist: 'Urbanist', sans-serif;
+  /* New design-system fonts. Old names aliased so existing code keeps working. */
+  --font-display: 'Kegilka', 'Notable', serif;
+  --font-body:    'Mona Sans', 'Urbanist', system-ui, sans-serif;
+  --font-notable:  var(--font-display);
+  --font-urbanist: var(--font-body);
   --color-obsidian: #09090b;
   --color-arsenal-red: #EF0107;
   --color-burgundy: #3d0c11;
@@ -14,19 +28,37 @@
   --color-arsenal-red: #EF0107;
   --color-burgundy: #3d0c11;
   --color-silver: #C0C0C0;
-  --font-notable: 'Notable', serif;
-  --font-urbanist: 'Urbanist', sans-serif;
+  --font-display:  var(--font-display);
+  --font-body:     var(--font-body);
+  --font-notable:  var(--font-display);
+  --font-urbanist: var(--font-body);
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto; /* Lenis handles smooth scroll — native smooth interferes */
 }
 
 body {
   background: var(--color-obsidian);
   color: #ffffff;
-  font-family: var(--font-urbanist);
+  font-family: var(--font-body);
   overflow-x: hidden;
+}
+
+/* Hide all scrollbars — scroll is driven by Lenis */
+html,
+body,
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
 }
 
 /* Grain animation */
@@ -78,4 +110,61 @@ body {
 
 .horizontal-scroll::-webkit-scrollbar-thumb {
   background: #EF0107;
+}
+
+/* ── England Immersive Story Section ─────────────────────────────── */
+.eng-immersive-img-wrap {
+  border: 1px solid rgba(10,25,70,0.1);
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 8px 32px rgba(10,25,70,0.08);
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+.eng-immersive-img-wrap::before,
+.eng-immersive-img-wrap::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid transparent;
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.eng-immersive-img-wrap::before {
+  top: -1px;
+  left: -1px;
+  border-top-color: rgba(10,25,70,0.25);
+  border-left-color: rgba(10,25,70,0.25);
+}
+
+.eng-immersive-img-wrap::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom-color: rgba(10,25,70,0.25);
+  border-right-color: rgba(10,25,70,0.25);
+}
+
+.eng-immersive-img-hovered {
+  border-color: rgba(10,25,70,0.35);
+  box-shadow: 0 0 40px rgba(10,25,70,0.12), 0 16px 48px rgba(10,25,70,0.1);
+  transform: translate(-50%, -50%) scale(1.04) !important;
+  z-index: 100;
+}
+
+.eng-immersive-img-hovered::before,
+.eng-immersive-img-hovered::after {
+  width: 100%;
+  height: 100%;
+  border-color: rgba(10,25,70,0.3);
+}
+
+.eng-immersive-heading {
+  transition: text-shadow 0.2s ease;
 }

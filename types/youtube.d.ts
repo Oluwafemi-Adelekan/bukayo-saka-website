@@ -1,5 +1,13 @@
 // YouTube IFrame API type declarations
 declare namespace YT {
+  const PlayerState: {
+    readonly ENDED:     0
+    readonly PLAYING:   1
+    readonly PAUSED:    2
+    readonly BUFFERING: 3
+    readonly CUED:      5
+  }
+
   interface PlayerEvent {
     target: Player
   }
