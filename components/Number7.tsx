@@ -76,7 +76,7 @@ export default function Number7() {
 
         {/* Top-left text — BTP-style two-line heading + body */}
         <motion.div
-          className="absolute top-[80px] md:top-[104px] left-4 md:left-6 max-w-xs md:max-w-md"
+          className="absolute top-[80px] md:top-[104px] left-4 md:left-6 right-4 md:right-6"
           style={{ opacity: textOp, y: textY }}
         >
           <h2 style={{ margin: '0 0 18px', padding: 0, lineHeight: 0.88 }}>
@@ -105,14 +105,14 @@ export default function Number7() {
           <p
             style={{
               fontFamily: 'Mona Sans, sans-serif',
-              fontSize: '0.875rem',
+              fontSize: 'var(--body-text-size)',
               lineHeight: 1.72,
               color: 'rgba(255,255,255,0.78)',
               margin: 0,
-              maxWidth: 360,
+              maxWidth: 600,
             }}
           >
-            Permanently handed the iconic Number 7 shirt at Arsenal — a number worn by
+            Permanently handed the iconic Number 7 shirt at Arsenal, a number worn by
             legends. Mikel Arteta calls him &quot;the heart of this team.&quot; Arsenal&apos;s
             city rivals can only watch.
           </p>

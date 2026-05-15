@@ -64,7 +64,8 @@ export default function Hero() {
     <section
       ref={ref}
       id="hero"
-      className="relative min-h-screen w-full flex flex-col overflow-hidden"
+      className="relative w-full flex flex-col overflow-hidden"
+      style={{ minHeight: '100svh' }}
     >
       {/* YouTube video background */}
       <div className="absolute inset-0 z-[0] overflow-hidden">
@@ -95,11 +96,37 @@ export default function Hero() {
       <GrainOverlay className="z-[1]" />
 
       <motion.div
-        style={{ opacity, paddingBottom: 'calc(min(18vw, 22rem) + 16px)' }}
+        style={{ opacity }}
         className="relative z-[30] flex-1 flex flex-col justify-end pointer-events-none"
       >
         <div className="relative z-10 px-4 md:px-6 md:translate-y-10 pointer-events-auto">
           <NextMatch />
+        </div>
+        {/* Invisible BUKAYO SAKA SVG — reserves the exact height FixedBrand occupies
+            on every viewport. Matches FixedBrand's px-4/md:px-6 and bottom-4/md:bottom-6.
+            mt-5 = 20px gap above the brand text so NextMatch doesn't sit flush. */}
+        <div
+          aria-hidden
+          className="block px-4 md:px-6 pb-4 md:pb-6 mt-5 md:mt-16"
+          style={{ opacity: 0, pointerEvents: 'none', flexShrink: 0 }}
+        >
+          <svg
+            viewBox="0 0 1000 135"
+            style={{ display: 'block', width: '100%', overflow: 'visible' }}
+            aria-hidden
+          >
+            <text
+              x="0" y="128"
+              textAnchor="start"
+              fontSize="155"
+              textLength="1000"
+              lengthAdjust="spacingAndGlyphs"
+              fill="transparent"
+              style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}
+            >
+              BUKAYO SAKA
+            </text>
+          </svg>
         </div>
       </motion.div>
     </section>

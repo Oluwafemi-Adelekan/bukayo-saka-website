@@ -21,6 +21,9 @@
   --color-arsenal-red: #EF0107;
   --color-burgundy: #3d0c11;
   --color-silver: #C0C0C0;
+  /* Body copy size — change here to update everywhere */
+  --body-text-size: 1.125rem;
+  --body-line-height: 1.72;
 }
 
 @theme inline {

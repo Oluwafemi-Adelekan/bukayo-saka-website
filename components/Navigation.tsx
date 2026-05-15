@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import FillButton from './FillButton'
 
 const links = [
   { label: 'Story', href: '#story', sectionId: 'story' },
@@ -17,9 +18,17 @@ function getLenis(): LenisInstance | null {
   return (window as unknown as Record<string, unknown>).__lenis as LenisInstance ?? null
 }
 
+const socials = [
+  { label: 'Instagram', href: 'https://www.instagram.com/bukayosaka87/' },
+  { label: 'Twitter / X', href: 'https://x.com/BukayoSaka87' },
+  { label: 'Facebook', href: 'https://web.facebook.com/BukayoSakaOfficial' },
+  { label: 'TikTok', href: 'https://www.tiktok.com/@bukayosaka87' },
+]
+
 export default function Navigation() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('')
+  const prevMenuOpen = useRef(false)
 
   useEffect(() => {
     const sectionIds = ['hero', ...links.map((l) => l.sectionId)]
@@ -39,28 +48,32 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', update)
   }, [])
 
-  const handleClick = useCallback((e: React.MouseEvent, link: typeof links[0]) => {
-    e.preventDefault()
-    setMenuOpen(false)
+  useEffect(() => {
+    if (menuOpen !== prevMenuOpen.current) {
+      prevMenuOpen.current = menuOpen
+      window.dispatchEvent(new Event(menuOpen ? 'lenis:stop' : 'lenis:start'))
+    }
+  }, [menuOpen])
 
-    const el = document.getElementById(link.sectionId)
+  const scrollToSection = useCallback((sectionId: string) => {
+    const el = document.getElementById(sectionId)
     if (!el) return
-
-    // For Story: land at scrollYProgress 0.33 — THE STORY fully drawn, curtain still closed.
-    // useScroll['start start','end end'] maps progress over (sectionHeight - viewportHeight),
-    // so the offset must use that denominator, NOT el.offsetHeight.
-    const offset = link.sectionId === 'story'
+    const offset = sectionId === 'story'
       ? (el.offsetHeight - window.innerHeight) * 0.33
       : 0
     const top = el.getBoundingClientRect().top + window.scrollY + offset
-
-    const lenis = getLenis()
-    if (lenis) {
-      lenis.scrollTo(top, {})
-    } else {
-      window.scrollTo({ top, behavior: 'smooth' })
-    }
+    setTimeout(() => {
+      const lenis = getLenis()
+      if (lenis) lenis.scrollTo(top, {})
+      else window.scrollTo({ top, behavior: 'smooth' })
+    }, 50)
   }, [])
+
+  const handleClick = useCallback((e: React.MouseEvent, link: typeof links[0]) => {
+    e.preventDefault()
+    setMenuOpen(false)
+    scrollToSection(link.sectionId)
+  }, [scrollToSection])
 
   return (
     <>
@@ -90,50 +103,156 @@ export default function Navigation() {
           })}
         </nav>
 
-        {/* Mobile hamburger */}
-        <div className="lg:hidden flex items-center justify-end px-4 py-5 pointer-events-auto">
-          <button
-            className="flex flex-col gap-1.5 p-2"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            <span className={`block w-6 h-0.5 bg-white origin-center transition-transform ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-            <span className={`block w-6 h-0.5 bg-white transition-opacity ${menuOpen ? 'opacity-0' : 'opacity-100'}`} />
-            <span className={`block w-6 h-0.5 bg-white origin-center transition-transform ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
-          </button>
-        </div>
       </header>
+
+      {/* Mobile hamburger — single button that morphs between 3 bars and X.
+          Sits at z-[220] (above the overlay) so the same element is visible
+          and animating whether the menu is closed or open. */}
+      <button
+        className="lg:hidden fixed top-5 right-4 z-[220] flex flex-col gap-1.5 p-2"
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+      >
+        <span
+          className="block w-6 h-0.5 bg-white origin-center"
+          style={{
+            transform: menuOpen ? 'rotate(45deg) translateY(8px)' : 'rotate(0deg) translateY(0)',
+            transition: 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        />
+        <span
+          className="block w-6 h-0.5 bg-white"
+          style={{
+            opacity: menuOpen ? 0 : 1,
+            transition: 'opacity 0.25s ease',
+          }}
+        />
+        <span
+          className="block w-6 h-0.5 bg-white origin-center"
+          style={{
+            transform: menuOpen ? 'rotate(-45deg) translateY(-8px)' : 'rotate(0deg) translateY(0)',
+            transition: 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        />
+      </button>
 
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="lg:hidden fixed top-[74px] left-0 right-0 z-[99] overflow-hidden bg-[#09090b]/95 backdrop-blur-md border-t border-white/5"
+            initial={{ y: '-100%' }}
+            animate={{ y: '0%' }}
+            exit={{ y: '-100%' }}
+            // Open: curtain glides down with the same spring physics as
+            // FillButton's hover fill (stiffness 55 / damping 17 / mass 1.3).
+            // Close: same spring, with a 0.3s delay so inner elements fade out first.
+            transition={{
+              type: 'spring', stiffness: 55, damping: 17, mass: 1.3,
+              delay: menuOpen ? 0 : 0.3,
+            }}
+            className="lg:hidden fixed inset-0 z-[210] bg-[#09090b] flex flex-col"
           >
-            <nav className="flex flex-col px-4 py-4 gap-4">
+            {/* Top spacer matching the hamburger area so links don't sit under it */}
+            <div className="px-4 py-5" style={{ flexShrink: 0, height: 64 }} />
+
+            {/* Nav links — fade in after curtain lands; fade out FIRST on close */}
+            <motion.nav
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={{
+                hidden: {},
+                visible: { transition: { delayChildren: 0.7, staggerChildren: 0.06 } },
+                exit: { transition: { staggerChildren: 0.04, staggerDirection: -1 } },
+              }}
+              className="flex flex-col px-6"
+              style={{ flexShrink: 0 }}
+            >
               {links.map((link) => {
                 const isActive = activeSection === link.sectionId
                 return (
-                  <a
+                  <motion.a
                     key={link.href}
                     href={link.href}
                     onClick={(e) => handleClick(e, link)}
-                    className={`text-base tracking-wide uppercase py-2 border-b border-white/5 transition-colors ${
-                      isActive ? 'text-[#EF0107] font-medium' : 'text-zinc-300 hover:text-white'
-                    }`}
-                    style={{ fontFamily: 'Mona Sans, sans-serif' }}
+                    variants={{
+                      hidden: { opacity: 0, y: 14 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
+                      exit: { opacity: 0, y: 10, transition: { duration: 0.2, ease: 'easeIn' } },
+                    }}
+                    style={{
+                      fontFamily: 'Mona Sans, sans-serif',
+                      fontSize: '0.75rem',
+                      letterSpacing: '0.25em',
+                      textTransform: 'uppercase',
+                      fontWeight: 700,
+                      color: isActive ? '#ffffff' : 'rgba(255,255,255,0.5)',
+                      textDecoration: 'none',
+                      display: 'block',
+                      paddingTop: '1.1rem',
+                      paddingBottom: '1.1rem',
+                      borderBottom: isActive ? '1px solid rgba(255,255,255,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                      transition: 'color 0.3s ease, border-color 0.3s ease',
+                    }}
                   >
-                    {isActive && (
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#EF0107] mr-3 align-middle" />
-                    )}
                     {link.label}
-                  </a>
+                  </motion.a>
                 )
               })}
-            </nav>
+            </motion.nav>
+
+            <div className="flex-1" />
+
+            {/* Get in Touch button — matches the footer's FillButton */}
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10, transition: { duration: 0.2, ease: 'easeIn' } }}
+              transition={{ delay: 0.7 + links.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="flex justify-center px-6 pb-8"
+              style={{ flexShrink: 0 }}
+            >
+              <FillButton label="Get in Touch" onClick={() => {
+                setMenuOpen(false)
+                setTimeout(() => {
+                  const footer = document.querySelector('footer')
+                  if (!footer) return
+                  const top = footer.getBoundingClientRect().top + window.scrollY
+                  const lenis = getLenis()
+                  if (lenis) lenis.scrollTo(top, {})
+                  else window.scrollTo({ top, behavior: 'smooth' })
+                }, 50)
+              }} />
+            </motion.div>
+
+            {/* Social links — centered, last to fade in / first to fade out */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10, transition: { duration: 0.2, ease: 'easeIn' } }}
+              transition={{ delay: 0.8 + links.length * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="flex items-center justify-center flex-wrap gap-6 px-6 pb-10"
+              style={{ flexShrink: 0 }}
+            >
+              {socials.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontFamily: 'Mona Sans, sans-serif',
+                    fontSize: '0.65rem',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.45)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  {s.label}
+                </a>
+              ))}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

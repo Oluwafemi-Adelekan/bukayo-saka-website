@@ -6,25 +6,45 @@ import Image from 'next/image'
 import { createPortal } from 'react-dom'
 import GrainOverlay from './GrainOverlay'
 import FillButton from './FillButton'
+import type { SanityBTPSlide } from '@/lib/sanity/queries'
 
 const OVERLAY_DUR = 580
 
-const slides = [
+type Slide = {
+  id: string
+  navLabel: string
+  headline: string
+  body: string
+  image: string
+}
+
+const FALLBACK_SLIDES: Slide[] = [
   {
     id: 'nigeria',
     navLabel: 'BIG SHOE FOUNDATION - NIGERIA',
     headline: 'Funding Life-Changing Surgery for Children in Kano',
-    body: 'Partnering with the BigShoe Foundation, Bukayo personally funded 120 transformative medical operations for children in Kano, Nigeria — treating hernias, brain tumours, and conditions that would otherwise remain unaddressed due to poverty. The children who receive these operations often have no other route to treatment. This is not charity for a press release — it is sustained, personal commitment.',
+    body: 'Partnering with the BigShoe Foundation, Bukayo personally funded 120 transformative medical operations for children in Kano, Nigeria: treating hernias, brain tumours, and conditions that would otherwise remain unaddressed due to poverty. The children who receive these operations often have no other route to treatment. This is not charity for a press release. It is sustained, personal commitment.',
     image: '/Big Shoe Foundation.png',
   },
   {
     id: 'ealing',
     navLabel: 'EALING COMMUNITY - LONDON',
     headline: 'Back to School in the Borough That Made Him',
-    body: 'Recognising the devastating impact of the cost-of-living crisis on families in his hometown of Ealing, Bukayo donated over 1,000 school uniforms to local children and their families — enabling kids to return to education with dignity. Born and raised in these streets, he has never forgotten where he came from, nor the people who shared that journey with him.',
+    body: 'Recognising the devastating impact of the cost-of-living crisis on families in his hometown of Ealing, Bukayo donated over 1,000 school uniforms to local children and their families, enabling kids to return to education with dignity. Born and raised in these streets, he has never forgotten where he came from, nor the people who shared that journey with him.',
     image: '/Ealing Community.png',
   },
 ]
+
+function resolveSanitySlides(sanitySlides?: SanityBTPSlide[]): Slide[] {
+  if (!sanitySlides?.length) return FALLBACK_SLIDES
+  return sanitySlides.map(s => ({
+    id: s._id,
+    navLabel: s.navLabel,
+    headline: s.headline,
+    body: s.body,
+    image: s.image ?? '',
+  }))
+}
 
 function DiagonalBrush({ active }: { active: boolean }) {
   return (
@@ -65,7 +85,7 @@ function DiagonalBrush({ active }: { active: boolean }) {
   )
 }
 
-function BeyondOverlay({ onClose }: { onClose: () => void }) {
+function BeyondOverlay({ onClose, slides }: { onClose: () => void; slides: Slide[] }) {
   const [activeIdx, setActiveIdx] = useState(0)
   const [contentReady, setContentReady] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -214,16 +234,16 @@ function BeyondOverlay({ onClose }: { onClose: () => void }) {
           fontSize: 'clamp(1.4rem, 2.8vw, 2.6rem)',
           fontWeight: 400, lineHeight: 1.08,
           color: '#ffffff', margin: '0 0 14px',
-          maxWidth: 520,
+          maxWidth: 600,
         }}>
           {current.headline}
         </h3>
         <p style={{
           fontFamily: 'Mona Sans, sans-serif',
-          fontSize: 'clamp(0.78rem, 1vw, 0.9rem)',
-          lineHeight: 1.72,
+          fontSize: 'var(--body-text-size)',
+          lineHeight: 'var(--body-line-height)',
           color: 'rgba(255,255,255,0.68)',
-          margin: 0, maxWidth: 520,
+          margin: 0, maxWidth: 600,
         }}>
           {current.body}
         </p>
@@ -287,7 +307,8 @@ function BeyondOverlay({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function BeyondThePitch() {
+export default function BeyondThePitch({ slides: sanitySlides }: { slides?: SanityBTPSlide[] }) {
+  const slides = resolveSanitySlides(sanitySlides)
   const [showOverlay, setShowOverlay] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -310,7 +331,7 @@ export default function BeyondThePitch() {
       {mounted && createPortal(
         <AnimatePresence>
           {showOverlay && (
-            <BeyondOverlay key="beyond-overlay" onClose={() => setShowOverlay(false)} />
+            <BeyondOverlay key="beyond-overlay" onClose={() => setShowOverlay(false)} slides={slides} />
           )}
         </AnimatePresence>,
         document.body
@@ -382,11 +403,12 @@ export default function BeyondThePitch() {
                 transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.12 }}
                 style={{
                   fontFamily: 'Mona Sans, sans-serif',
-                  fontSize: '0.875rem',
+                  fontSize: 'var(--body-text-size)',
                   lineHeight: 1.72,
                   color: 'rgba(255,255,255,0.48)',
                   margin: '18px 0 28px',
-                  maxWidth: 360,
+                  maxWidth: 600,
+                  width: '100%',
                 }}
               >
                 Goals and assists tell part of the story. Bukayo Saka&apos;s most important work happens far from any football pitch.

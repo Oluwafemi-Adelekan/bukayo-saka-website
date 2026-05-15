@@ -9,11 +9,11 @@ const ease = [0.16, 1, 0.3, 1] as const
 type Award = {
   label: string
   count: number
-  image: string
+  image: string | null
   years: string
 }
 
-const AWARDS: Award[] = [
+const AWARDS_FALLBACK: Award[] = [
   { label: 'FA Cup Wins',                         count: 1, image: '/FA Cup Win.png',                            years: '2020' },
   { label: 'Community Shield',                    count: 2, image: '/Community Shield.png',                      years: '2020, 2023' },
   { label: 'PFA Young Player of the Year',        count: 1, image: '/PFA Young player of the year.png',          years: '2022' },
@@ -139,9 +139,13 @@ function StatCell({
 }
 
 // ── Main section ─────────────────────────────────────────────────
-type Props = { inOverlay?: boolean }
+type Props = {
+  inOverlay?: boolean
+  trophies?: Award[]
+}
 
-export default function TrophyCabinet({ inOverlay = false }: Props) {
+export default function TrophyCabinet({ inOverlay = false, trophies }: Props) {
+  const AWARDS = trophies?.length ? trophies : AWARDS_FALLBACK
   const [active, setActive] = useState(0)
   const stat = AWARDS[active]
 
@@ -202,7 +206,7 @@ export default function TrophyCabinet({ inOverlay = false }: Props) {
             <AnimatePresence mode="wait">
               <motion.img
                 key={stat.image}
-                src={stat.image}
+                src={stat.image ?? undefined}
                 alt={stat.label}
                 initial={{ opacity: 0, scale: 1.03 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -272,7 +276,7 @@ export default function TrophyCabinet({ inOverlay = false }: Props) {
 
       {/* Preload images to prevent hover delay */}
       <div style={{ display: 'none' }}>
-        {AWARDS.map((award) => (
+        {AWARDS.map((award) => award.image && (
           <Image
             key={award.image}
             src={award.image}

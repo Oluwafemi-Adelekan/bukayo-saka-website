@@ -9,7 +9,7 @@ import GrainOverlay from './GrainOverlay'
 const brands = [
   {
     name: 'New Balance',
-    desc: 'Signature boot partner. The Furon v8 "7egacy" — co-designed with Bukayo, featuring lion & dove embroidery in Rich Burgundy and Metallic Silver.',
+    desc: 'Signature boot partner. The Furon v8 "7egacy", co-designed with Bukayo, featuring lion & dove embroidery in Rich Burgundy and Metallic Silver.',
     cta: 'Shop the 7egacy',
     href: 'https://www.newbalance.co.uk/sport/football/football-boots/',
     images: ['/Furon v8.png', '/Furon v8 2.png'],
@@ -167,11 +167,10 @@ export default function Commercial() {
                       {brand.name}
                     </h3>
 
-                    {/* Description — always visible (12px exactly per design system) */}
                     <p style={{
                       fontFamily: 'Mona Sans, sans-serif',
-                      fontSize: '0.75rem',
-                      lineHeight: 1.65,
+                      fontSize: 'var(--body-text-size)',
+                      lineHeight: 'var(--body-line-height)',
                       color: isActive ? 'rgba(255,255,255,0.52)' : 'rgba(255,255,255,0.28)',
                       margin: '0 0 12px',
                       transition: 'color 0.4s ease',

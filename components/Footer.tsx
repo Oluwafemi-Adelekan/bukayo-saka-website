@@ -126,7 +126,7 @@ function TermsContent() {
       {p('This is an unofficial fan tribute website dedicated to Bukayo Saka. It is not affiliated with, endorsed by, or connected to Bukayo Saka, his management or representatives, Arsenal Football Club, The Football Association, or any other organisation, brand, or individual mentioned herein. All trademarks, names, and likenesses belong to their respective owners.')}
 
       {h('2. Purpose')}
-      {p('The content on this website — including statistics, biographical information, fixture data, and editorial content — is provided for entertainment, informational, and fan engagement purposes only. Nothing on this site constitutes official communication from any of the parties named.')}
+      {p('The content on this website, including statistics, biographical information, fixture data, and editorial content, is provided for entertainment, informational, and fan engagement purposes only. Nothing on this site constitutes official communication from any of the parties named.')}
 
       {h('3. Intellectual Property')}
       {p('Third-party logos, imagery, and trademarks referenced on this site are the property of their respective owners. Their use on this fan tribute site is not intended to infringe upon any intellectual property rights. If you are a rights holder and have concerns about specific content, please contact us and we will address them promptly.')}
@@ -282,6 +282,7 @@ export default function Footer() {
             paddingBottom: 0,
             scale: brandScale,
             transformOrigin: 'bottom center',
+            overflow: 'visible',
           }}
         >
           <svg
@@ -336,14 +337,14 @@ export default function Footer() {
           <p
             style={{
               fontFamily: 'Mona Sans, sans-serif',
-              fontSize: '0.875rem',
-              lineHeight: 1.72,
+              fontSize: 'var(--body-text-size)',
+              lineHeight: 'var(--body-line-height)',
               color: 'rgba(255,255,255,0.42)',
               margin: '0 auto 28px',
               maxWidth: 360,
             }}
           >
-            For press enquiries, partnerships, or anything else — reach out to the team.
+            For press enquiries, partnerships, or anything else, reach out to the team.
           </p>
 
           <FillButton label="Contact Us" />

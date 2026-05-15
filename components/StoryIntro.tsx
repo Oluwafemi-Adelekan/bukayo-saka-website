@@ -208,7 +208,7 @@ export default function StoryIntro() {
           className="absolute inset-0 z-[3] pointer-events-none"
           style={{ opacity: 0, transform: 'translateY(100vh)' }}
         >
-          <div className="absolute top-[80px] md:top-[104px] left-4 md:left-6 max-w-xs md:max-w-md">
+          <div className="absolute top-[80px] md:top-[104px] left-4 md:left-6 right-4 md:right-6">
             <h2 style={{ margin: '0 0 18px', padding: 0, lineHeight: 0.88 }}>
               <span style={{
                 display: 'block',
@@ -234,11 +234,11 @@ export default function StoryIntro() {
             <p
               style={{
                 fontFamily: 'Mona Sans, sans-serif',
-                fontSize: '0.875rem',
+                fontSize: 'var(--body-text-size)',
                 lineHeight: 1.72,
                 color: 'rgba(255,255,255,0.72)',
                 margin: 0,
-                maxWidth: 360,
+                maxWidth: 600,
               }}
             >
               Born on 5 September 2001 in Ealing, West London, to Nigerian parents
@@ -271,15 +271,15 @@ export default function StoryIntro() {
           className="absolute inset-0 z-[3] pointer-events-none"
           style={{ opacity: 0, transform: 'translateY(100vh)' }}
         >
-          <div className="absolute top-[80px] md:top-[104px] left-4 md:left-6 max-w-xs md:max-w-md">
+          <div className="absolute top-[80px] md:top-[104px] left-4 md:left-6 right-4 md:right-6">
             <p
               style={{
                 fontFamily: 'Mona Sans, sans-serif',
-                fontSize: '0.875rem',
+                fontSize: 'var(--body-text-size)',
                 lineHeight: 1.72,
                 color: 'rgba(255,255,255,0.72)',
                 margin: '0 0 14px',
-                maxWidth: 360,
+                maxWidth: 600,
               }}
             >
               He attended Edward Betham Church of England Primary School before
@@ -289,11 +289,11 @@ export default function StoryIntro() {
             <p
               style={{
                 fontFamily: 'Mona Sans, sans-serif',
-                fontSize: '0.875rem',
+                fontSize: 'var(--body-text-size)',
                 lineHeight: 1.72,
                 color: 'rgba(255,255,255,0.72)',
                 margin: 0,
-                maxWidth: 360,
+                maxWidth: 600,
               }}
             >
               Prior to joining Arsenal, Saka played youth football for local club
@@ -302,13 +302,13 @@ export default function StoryIntro() {
           </div>
 
           <div
-            className="absolute bottom-4 md:bottom-6 right-4 md:right-6"
+            className="absolute right-4 md:right-6 bottom-[60px] md:bottom-6"
             style={{ maxWidth: 280, textAlign: 'right' }}
           >
             <p
               style={{
                 fontFamily: 'Mona Sans, sans-serif',
-                fontSize: '0.875rem',
+                fontSize: 'var(--body-text-size)',
                 lineHeight: 1.72,
                 color: 'rgba(255,255,255,0.68)',
                 margin: '0 0 8px',

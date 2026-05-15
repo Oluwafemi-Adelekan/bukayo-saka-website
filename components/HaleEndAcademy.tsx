@@ -49,7 +49,7 @@ export default function HaleEndAcademy() {
           </div>
 
           {/* Text block — full width on mobile, sits next to portrait on desktop */}
-          <div className="flex-shrink-0 flex flex-col justify-start md:justify-center w-[78vw] md:w-[28vw] px-4 md:px-0 pt-[88px] md:pt-0">
+          <div className="flex-shrink-0 flex flex-col justify-start md:justify-center w-screen md:w-[600px] px-4 md:px-0 pt-[88px] md:pt-0">
             <h2 style={{ margin: '0 0 18px', padding: 0, lineHeight: 0.88 }}>
               <span style={{
                 display: 'block',
@@ -74,13 +74,13 @@ export default function HaleEndAcademy() {
             </h2>
             <p style={{
               fontFamily: 'Mona Sans, sans-serif',
-              fontSize: '0.875rem',
+              fontSize: 'var(--body-text-size)',
               lineHeight: 1.72,
               color: 'rgba(255,255,255,0.72)',
               margin: 0,
-              maxWidth: 360,
+              maxWidth: 600,
             }}>
-              Joins Arsenal&apos;s Hale End Academy at just seven years old — the same
+              Joins Arsenal&apos;s Hale End Academy at just seven years old, the same
               grassroots system that produced Ashley Cole and Jack Wilshere. From day
               one, coaches saw something different.
             </p>

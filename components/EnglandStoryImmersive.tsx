@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react'
 import { MotionValue, useTransform, motion, useMotionValue, useSpring } from 'framer-motion'
+import type { SanityCareerChapter } from '@/lib/sanity/queries'
 
 // ── Scene configuration ───────────────────────────────────────────────────────
 const SCENE_DEPTH  = 8800   // camera stops when last images are ~200 units ahead
@@ -158,28 +159,37 @@ interface SceneItem {
   src?: string; alt?: string
 }
 
-function buildSceneItems(): SceneItem[] {
+type ChapterInput = typeof CHAPTERS[number] | SanityCareerChapter
+
+function buildSceneItems(chapters: ChapterInput[]): SceneItem[] {
   const items: SceneItem[] = []
-  for (const ch of CHAPTERS) {
+  for (const ch of chapters) {
     items.push({ type: 'heading', x: ch.headingX ?? 0, y: ch.headingY ?? 0, z: ch.headingZ, lines: ch.lines, subtitle: ch.subtitle })
     for (const img of ch.images) {
-      items.push({ type: 'image', x: img.x, y: img.y, z: img.z, src: img.src, alt: img.alt })
+      items.push({ type: 'image', x: img.x, y: img.y, z: img.z, src: img.src ?? undefined, alt: img.alt })
     }
   }
   return items
 }
 
-const SCENE_ITEMS = buildSceneItems()
-
 // ── Component ─────────────────────────────────────────────────────────────────
 interface Props {
-  progress: MotionValue<number>   // 0 → 1 driven by parent scroll
+  progress: MotionValue<number>
+  chapters?: SanityCareerChapter[]
 }
 
-export default function EnglandStoryImmersive({ progress }: Props) {
+export default function EnglandStoryImmersive({ progress, chapters }: Props) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const worldRef    = useRef<HTMLDivElement>(null)
   const itemRefs    = useRef<(HTMLDivElement | null)[]>([])
+
+  // Build scene items from Sanity chapters when available, fall back to hardcoded
+  const sceneItems = useMemo(
+    () => buildSceneItems(chapters?.length ? chapters : CHAPTERS),
+    [chapters],
+  )
+  const sceneItemsRef = useRef(sceneItems)
+  useEffect(() => { sceneItemsRef.current = sceneItems }, [sceneItems])
 
   const velocityRef     = useRef(0)
   const prevProgressRef = useRef(0)
@@ -232,7 +242,7 @@ export default function EnglandStoryImmersive({ progress }: Props) {
         worldRef.current.style.transform = `translateZ(${cz}px)`
       }
 
-      SCENE_ITEMS.forEach((item, i) => {
+      sceneItemsRef.current.forEach((item, i) => {
         const el = itemRefs.current[i]
         if (!el) return
 
@@ -320,7 +330,7 @@ export default function EnglandStoryImmersive({ progress }: Props) {
             willChange: 'transform',
           }}
         >
-          {SCENE_ITEMS.map((item, i) => (
+          {sceneItems.map((item, i) => (
             <div
               key={i}
               ref={setItemRef(i)}

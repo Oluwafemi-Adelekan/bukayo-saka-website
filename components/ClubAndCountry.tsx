@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll, animate } from 'framer-motion'
+import FillButton from './FillButton'
 import SignatureStroke from './SignatureStroke'
 import TrophyCabinet from './TrophyCabinet'
 import GrainOverlay from './GrainOverlay'
@@ -21,7 +22,7 @@ const ARSENAL_SVG = '/Arsenal Crest Use this instead.svg'
 const ENGLAND_SVG = '/england-badge use this instead.svg'
 
 const STORY =
-  "Since making his Arsenal debut as a teenager in 2018, Bukayo Saka has been the one constant in North London's rise. Not just a player — a statement. Every title race Arsenal has mounted, every European night that mattered, every moment that needed someone to step up: it's been him. Direct, decisive, and quietly devastating."
+  "Since making his Arsenal debut as a teenager in 2018, Bukayo Saka has been the one constant in North London's rise. Not just a player. A statement. Every title race Arsenal has mounted, every European night that mattered, every moment that needed someone to step up: it's been him. Direct, decisive, and quietly devastating."
 
 // Saka quote — words flagged `display` render in Kegilka serif, others in Mona Sans
 export const SAKA_QUOTE: { text: string; display?: boolean }[] = [
@@ -63,7 +64,7 @@ const ENG_FG_DIM  = 'rgba(10,25,70,0.55)'
 const ENG_BORDER  = 'rgba(10,25,70,0.12)'
 
 const ENG_DESCRIPTION =
-  'Joins the Three Lions and makes his mark on the international stage. A breakthrough moment in his young career, representing England at the highest level and becoming a key figure in major tournaments. His performances for the national team brought pride to millions, cementing his place as one of the brightest talents in English football — all before his 20th birthday.'
+  'Joins the Three Lions and makes his mark on the international stage. A breakthrough moment in his young career, representing England at the highest level and becoming a key figure in major tournaments. His performances for the national team brought pride to millions, cementing his place as one of the brightest talents in English football, all before his 20th birthday.'
 
 // ── Background video (Cloudinary, covers panel) ───────────────────────────────
 function VideoBg({ src }: { src: string }) {
@@ -246,8 +247,20 @@ function EngTile({
   )
 }
 
-export default function ClubAndCountry() {
+import type { SanityCareerChapter, SanityTrophy, SanitySettings } from '@/lib/sanity/queries'
+
+type ClubAndCountryProps = {
+  careerChapters?: SanityCareerChapter[]
+  trophies?: SanityTrophy[]
+  settings?: SanitySettings | null
+}
+
+export default function ClubAndCountry({ careerChapters, trophies, settings }: ClubAndCountryProps) {
   const { stats: liveStats } = useSakaStats()
+
+  const englandStats = settings?.englandStats ?? ENG_STATS
+  const arsenalStory = settings?.arsenalStory ?? STORY
+  const englandDescription = settings?.englandDescription ?? ENG_DESCRIPTION
 
   const [active, setActive]                         = useState<Side>('club')
   const [showOverlay, setShow]                      = useState(false)
@@ -257,6 +270,13 @@ export default function ClubAndCountry() {
   const [cursorPanel, setCursorPanel]               = useState<Side>('club')
   const [cursorVisible, setCursorVisible]           = useState(false)
   const [mounted, setMounted]                       = useState(false)
+  const [isTouch, setIsTouch]                       = useState(false)
+  const [mobileIdx, setMobileIdx]                   = useState(0)
+  const touchStartX                                 = useRef<number>(0)
+  const carouselRef                                 = useRef<HTMLDivElement>(null)
+  const trackX                                      = useMotionValue(0)
+  const baseTrackX                                  = useRef(0)
+  const snapAnimRef                                 = useRef<{ stop: () => void } | null>(null)
   const sectionRef             = useRef<HTMLDivElement>(null)
   const engScrollContainerRef  = useRef<HTMLDivElement>(null)
   const slideContainerRef      = useRef<HTMLDivElement>(null)
@@ -274,14 +294,27 @@ export default function ClubAndCountry() {
   // engTranslateX / engDepthBg / engDepthFg removed — depth is now handled
   // natively by CSS 3D perspective inside EnglandStoryImmersive
 
+  const getCarouselWidth = useCallback(() => carouselRef.current?.offsetWidth ?? window.innerWidth, [])
+
+  // trackX ranges from 0 (Arsenal fully visible) to -cardWidth (Arsenal fully clipped).
+  // Map it to a clip-path that grows from the right edge of Arsenal inward.
+  const arsenalClip = useTransform(trackX, (v) => {
+    const w = getCarouselWidth()
+    const pct = Math.max(0, Math.min(100, (Math.abs(v) / w) * 100))
+    return `inset(0 ${pct}% 0 0)`
+  })
+
   // Spring-dampened cursor position (viewport coords)
   const cx = useMotionValue(-300)
   const cy = useMotionValue(-300)
   const sx = useSpring(cx, { damping: 22, stiffness: 600, mass: 0.3 })
   const sy = useSpring(cy, { damping: 22, stiffness: 600, mass: 0.3 })
 
-  // Mount detection for portal
-  useEffect(() => { setMounted(true) }, [])
+  // Mount detection for portal + touch detection
+  useEffect(() => {
+    setMounted(true)
+    setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0)
+  }, [])
 
   // Track mouse globally; cursor only renders when over the section
   useEffect(() => {
@@ -291,9 +324,13 @@ export default function ClubAndCountry() {
       const el = sectionRef.current
       if (!el) return
       const r = el.getBoundingClientRect()
-      const inside =
+      const inBounds =
         e.clientX >= r.left && e.clientX <= r.right &&
         e.clientY >= r.top  && e.clientY <= r.bottom
+      // Also confirm the topmost element at the pointer is actually inside this
+      // section — prevents the cursor bleeding into sections stacked above (e.g. BeyondThePitch)
+      const topEl = document.elementFromPoint(e.clientX, e.clientY)
+      const inside = inBounds && !!topEl && el.contains(topEl)
       setCursorVisible(inside && !showOverlay && !showEngland)
       if (inside) {
         // Decide which panel based on x relative to section + active panel
@@ -440,7 +477,7 @@ export default function ClubAndCountry() {
 
   return (
     <>
-      {mounted && createPortal(cursorEl, document.body)}
+      {mounted && !isTouch && createPortal(cursorEl, document.body)}
 
       {/* ── Split-panel ───────────────────────────────────────────── */}
       {/* marginTop: -100vh overlaps the last 100vh of Number7 so the slide starts while it's still visible */}
@@ -452,73 +489,188 @@ export default function ClubAndCountry() {
         <motion.section
           ref={sectionRef}
           className="sticky top-0 w-full flex overflow-hidden"
-          style={{ height: '100vh', cursor: 'none', translateY: panelSlideY }}
+          style={{ height: '100vh', cursor: isTouch ? 'auto' : 'none', translateY: panelSlideY }}
         >
-          {/* Arsenal panel */}
-          <div
-            className="relative overflow-hidden flex-none"
-            style={{
-              width: active === 'club' ? '80%' : '20%',
-              height: '100%',
-              cursor: 'none',
-              transition: `width ${PANEL_DUR} ${PANEL_EASING}`,
-            }}
-            onMouseEnter={() => { setActive('club') }}
-            onClick={() => active === 'club' ? setShow(true) : setActive('club')}
-          >
-            <div className="absolute inset-0" style={{ opacity: active === 'club' ? 0 : 1, filter: 'grayscale(1) brightness(0.35)', transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
-              <Image src="/Saka Arsenal.png" alt="Saka Arsenal" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized priority />
-            </div>
-            <div className="absolute inset-0 overflow-hidden" style={{ opacity: active === 'club' ? 1 : 0, transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
-              <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431370/The_Gunner_Cover_zowdp8.mp4" />
-            </div>
-            <div className="absolute inset-0 pointer-events-none" style={{ background: active === 'club' ? 'linear-gradient(to right,rgba(9,9,11,0.85) 0%,rgba(9,9,11,0.2) 55%,rgba(9,9,11,0.05) 100%)' : 'transparent', transition: `background ${PANEL_DUR} ${PANEL_EASING}` }} />
+          <div className="hidden md:flex h-full w-full">
+            {/* Arsenal panel */}
+            <div
+              className="relative overflow-hidden flex-none"
+              style={{
+                width: active === 'club' ? '80%' : '20%',
+                height: '100%',
+                cursor: 'none',
+                transition: `width ${PANEL_DUR} ${PANEL_EASING}`,
+              }}
+              onMouseEnter={() => { setActive('club') }}
+              onClick={() => active === 'club' ? setShow(true) : setActive('club')}
+            >
+              <div className="absolute inset-0" style={{ opacity: active === 'club' ? 0 : 1, filter: 'grayscale(1) brightness(0.35)', transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
+                <Image src="/Saka Arsenal.png" alt="Saka Arsenal" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized priority />
+              </div>
+              <div className="absolute inset-0 overflow-hidden" style={{ opacity: active === 'club' ? 1 : 0, transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
+                <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431370/The_Gunner_Cover_zowdp8.mp4" />
+              </div>
+              <div className="absolute inset-0 pointer-events-none" style={{ background: active === 'club' ? 'linear-gradient(to right,rgba(9,9,11,0.85) 0%,rgba(9,9,11,0.2) 55%,rgba(9,9,11,0.05) 100%)' : 'transparent', transition: `background ${PANEL_DUR} ${PANEL_EASING}` }} />
 
-            <div className="absolute inset-0 flex flex-col justify-end p-4 pb-16 md:p-6 pointer-events-none" style={{ opacity: active === 'club' ? 1 : 0, transition: 'opacity 350ms ease' }}>
-              <Image src={ARSENAL_SVG} alt="Arsenal" width={40} height={47} className="mb-4" unoptimized />
-              <p className="text-white/50 text-xs tracking-[0.4em] uppercase mb-3 font-normal" style={{ fontFamily: 'Mona Sans, sans-serif' }}>Arsenal FC · Premier League</p>
-              <h2 className="text-white text-xl md:text-2xl tracking-widest uppercase leading-none" style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}>THE GUNNER</h2>
+              <div className="absolute inset-0 flex flex-col justify-end p-4 pb-16 md:p-6 pointer-events-none" style={{ opacity: active === 'club' ? 1 : 0, transition: 'opacity 350ms ease' }}>
+                <Image src={ARSENAL_SVG} alt="Arsenal" width={40} height={47} className="mb-4" unoptimized />
+                <p className="text-white/50 text-xs tracking-[0.4em] uppercase mb-3 font-normal" style={{ fontFamily: 'Mona Sans, sans-serif' }}>Arsenal FC · Premier League</p>
+                <h2 className="text-white text-xl md:text-2xl tracking-widest uppercase leading-none" style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}>THE GUNNER</h2>
+              </div>
+
+              {/* Vertical "Arsenal" label — pinned to LEFT edge so it doesn't drift on resize */}
+              <div className="absolute pointer-events-none z-20" style={{ left: 24, top: '50%', transform: 'translateY(-50%)', opacity: active === 'club' ? 0 : 1, transition: 'opacity 350ms ease' }}>
+                <span style={{ fontFamily: 'Mona Sans, sans-serif', writingMode: 'vertical-rl', transform: 'rotate(180deg)', display: 'block', letterSpacing: '0.5em', fontSize: '0.95rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', fontWeight: 500, textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}>Arsenal</span>
+              </div>
             </div>
 
-            {/* Vertical "Arsenal" label — pinned to LEFT edge so it doesn't drift on resize */}
-            <div className="absolute pointer-events-none z-20" style={{ left: 24, top: '50%', transform: 'translateY(-50%)', opacity: active === 'club' ? 0 : 1, transition: 'opacity 350ms ease' }}>
-              <span style={{ fontFamily: 'Mona Sans, sans-serif', writingMode: 'vertical-rl', transform: 'rotate(180deg)', display: 'block', letterSpacing: '0.5em', fontSize: '0.95rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', fontWeight: 500, textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}>Arsenal</span>
+            {/* England panel */}
+            <div
+              className="relative overflow-hidden flex-none"
+              style={{
+                width: active === 'country' ? '80%' : '20%',
+                height: '100%',
+                cursor: 'none',
+                transition: `width ${PANEL_DUR} ${PANEL_EASING}`,
+              }}
+              onMouseEnter={() => { setActive('country') }}
+              onClick={() => active === 'country' ? setShowEngland(true) : setActive('country')}
+            >
+              <div className="absolute inset-0" style={{ opacity: active === 'country' ? 0 : 1, filter: 'grayscale(1) brightness(0.35)', transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
+                <Image src="/Saka England National.png" alt="Saka England" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized />
+              </div>
+              <div className="absolute inset-0 overflow-hidden" style={{ opacity: active === 'country' ? 1 : 0, transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
+                <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431397/The_Lions_Cover_mbuqbm.mp4" />
+              </div>
+              <div className="absolute inset-0 pointer-events-none" style={{ background: active === 'country' ? 'linear-gradient(to left,rgba(9,9,11,0.85) 0%,rgba(9,9,11,0.2) 55%,rgba(9,9,11,0.05) 100%)' : 'transparent', transition: `background ${PANEL_DUR} ${PANEL_EASING}` }} />
+
+              <div className="absolute inset-0 flex flex-col justify-end items-end p-4 pb-16 md:p-6 pointer-events-none" style={{ opacity: active === 'country' ? 1 : 0, transition: 'opacity 350ms ease' }}>
+                <Image src={ENGLAND_SVG} alt="England" width={36} height={42} className="mb-4" unoptimized />
+                <p className="text-white/60 text-xs tracking-[0.4em] uppercase mb-3 font-normal text-right" style={{ fontFamily: 'Mona Sans, sans-serif' }}>England · Three Lions</p>
+                <h2 className="text-white text-xl md:text-2xl tracking-widest uppercase leading-none text-right" style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}>THE LION</h2>
+              </div>
+
+              {/* Vertical "England" label — pinned to RIGHT edge */}
+              <div className="absolute pointer-events-none z-20" style={{ right: 24, top: '50%', transform: 'translateY(-50%)', opacity: active === 'country' ? 0 : 1, transition: 'opacity 350ms ease' }}>
+                <span style={{ fontFamily: 'Mona Sans, sans-serif', writingMode: 'vertical-rl', transform: 'rotate(180deg)', display: 'block', letterSpacing: '0.5em', fontSize: '0.95rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', fontWeight: 500, textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}>England</span>
+              </div>
             </div>
+
+            {/* Divider line */}
+            <div className="absolute top-0 bottom-0 w-px pointer-events-none z-10" style={{ left: active === 'club' ? '80%' : '20%', background: 'rgba(255,255,255,0.12)', transition: `left ${PANEL_DUR} ${PANEL_EASING}` }} />
           </div>
 
-          {/* England panel */}
+          {/* ── Mobile carousel — peel/seam reveal (Capture One before/after style)
+              Both cards sit perfectly still in place. Arsenal is on top (zIndex 2)
+              and is CLIPPED from the right as the user swipes left — a vertical
+              seam slides across, with England (always rendered fully underneath)
+              showing through where Arsenal is clipped away.
+                trackX =  0           → Arsenal fully unclipped, seam off-screen right
+                trackX = -cardWidth   → Arsenal fully clipped, England fully revealed
+              Neither card translates. */}
           <div
-            className="relative overflow-hidden flex-none"
-            style={{
-              width: active === 'country' ? '80%' : '20%',
-              height: '100%',
-              cursor: 'none',
-              transition: `width ${PANEL_DUR} ${PANEL_EASING}`,
+            ref={carouselRef}
+            className="md:hidden absolute inset-0 overflow-hidden"
+            onTouchStart={(e) => {
+              touchStartX.current = e.touches[0].clientX
+              baseTrackX.current = trackX.get()
+              snapAnimRef.current?.stop()
             }}
-            onMouseEnter={() => { setActive('country') }}
-            onClick={() => active === 'country' ? setShowEngland(true) : setActive('country')}
+            onTouchMove={(e) => {
+              const dx = e.touches[0].clientX - touchStartX.current
+              const w = getCarouselWidth()
+              let next = baseTrackX.current + dx
+              // Elastic resistance past either boundary
+              if (next > 0) next = next * 0.25
+              else if (next < -w) next = -w + (next + w) * 0.25
+              trackX.set(next)
+            }}
+            onTouchEnd={(e) => {
+              const dx = e.changedTouches[0].clientX - touchStartX.current
+              const w = getCarouselWidth()
+              const threshold = w * 0.22
+              let newIdx = mobileIdx
+              if (mobileIdx === 0 && dx < -threshold) newIdx = 1
+              else if (mobileIdx === 1 && dx > threshold) newIdx = 0
+              setMobileIdx(newIdx)
+              snapAnimRef.current = animate(trackX, newIdx === 0 ? 0 : -w, {
+                type: 'spring', stiffness: 280, damping: 32, mass: 0.9,
+              })
+            }}
           >
-            <div className="absolute inset-0" style={{ opacity: active === 'country' ? 0 : 1, filter: 'grayscale(1) brightness(0.35)', transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
+            {/* England card — always rendered fully behind, NEVER moves */}
+            <div
+              style={{
+                position: 'absolute', inset: 0, zIndex: 1, cursor: 'pointer',
+                filter: mobileIdx === 1 ? 'grayscale(0) brightness(1)' : 'grayscale(1) brightness(0.45)',
+                transition: 'filter 0.6s cubic-bezier(0.16,1,0.3,1)',
+              }}
+              onClick={() => setShowEngland(true)}
+            >
+              {/* Image fallback always renders. The video fades in only once
+                  England becomes the active card (post-commit), and fades out
+                  the moment it's no longer active. */}
               <Image src="/Saka England National.png" alt="Saka England" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized />
+              <motion.div
+                style={{ position: 'absolute', inset: 0 }}
+                animate={{ opacity: mobileIdx === 1 ? 1 : 0 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431397/The_Lions_Cover_mbuqbm.mp4" />
+              </motion.div>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 50%, transparent 100%)' }} />
+              <div style={{ position: 'absolute', bottom: '3rem', left: '1rem', right: '1rem' }}>
+                <Image src={ENGLAND_SVG} alt="England" width={28} height={33} unoptimized style={{ marginBottom: 14, display: 'block' }} />
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ fontFamily: 'Mona Sans, sans-serif', fontSize: '0.55rem', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', margin: '0 0 6px', fontWeight: 600 }}>England · Three Lions</p>
+                  <h2 style={{ fontFamily: 'Kegilka, serif', fontWeight: 400, fontSize: 'clamp(2.2rem, 8vw, 3rem)', lineHeight: 1, color: '#fff', margin: 0 }}>The Lion</h2>
+                </div>
+                <div onClick={(e) => e.stopPropagation()} style={{ marginBottom: 22 }}>
+                  <FillButton label="TAP TO EXPLORE" onClick={() => setShowEngland(true)} />
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span style={{ display: 'block', height: 4, borderRadius: 2, background: mobileIdx === 0 ? '#fff' : 'rgba(255,255,255,0.3)', width: mobileIdx === 0 ? 24 : 8, transition: 'width 0.3s ease, background 0.3s ease' }} />
+                  <span style={{ display: 'block', height: 4, borderRadius: 2, background: mobileIdx === 1 ? '#fff' : 'rgba(255,255,255,0.3)', width: mobileIdx === 1 ? 24 : 8, transition: 'width 0.3s ease, background 0.3s ease' }} />
+                </div>
+              </div>
             </div>
-            <div className="absolute inset-0 overflow-hidden" style={{ opacity: active === 'country' ? 1 : 0, transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
-              <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431397/The_Lions_Cover_mbuqbm.mp4" />
-            </div>
-            <div className="absolute inset-0 pointer-events-none" style={{ background: active === 'country' ? 'linear-gradient(to left,rgba(9,9,11,0.85) 0%,rgba(9,9,11,0.2) 55%,rgba(9,9,11,0.05) 100%)' : 'transparent', transition: `background ${PANEL_DUR} ${PANEL_EASING}` }} />
 
-            <div className="absolute inset-0 flex flex-col justify-end items-end p-4 pb-16 md:p-6 pointer-events-none" style={{ opacity: active === 'country' ? 1 : 0, transition: 'opacity 350ms ease' }}>
-              <Image src={ENGLAND_SVG} alt="England" width={36} height={42} className="mb-4" unoptimized />
-              <p className="text-white/60 text-xs tracking-[0.4em] uppercase mb-3 font-normal text-right" style={{ fontFamily: 'Mona Sans, sans-serif' }}>England · Three Lions</p>
-              <h2 className="text-white text-xl md:text-2xl tracking-widest uppercase leading-none text-right" style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}>THE LION</h2>
-            </div>
+            {/* Arsenal card — always rendered fully on top, NEVER translates;
+                only its clip-path shrinks from the right as the user swipes left. */}
+            <motion.div
+              style={{
+                position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer', clipPath: arsenalClip,
+                filter: mobileIdx === 0 ? 'grayscale(0) brightness(1)' : 'grayscale(1) brightness(0.45)',
+                transition: 'filter 0.6s cubic-bezier(0.16,1,0.3,1)',
+              }}
+              onClick={() => setShow(true)}
+            >
+              <Image src="/Saka Arsenal.png" alt="Saka Arsenal" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized priority />
+              <motion.div
+                style={{ position: 'absolute', inset: 0 }}
+                animate={{ opacity: mobileIdx === 0 ? 1 : 0 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431370/The_Gunner_Cover_zowdp8.mp4" />
+              </motion.div>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 50%, transparent 100%)' }} />
+              <div style={{ position: 'absolute', bottom: '3rem', left: '1rem', right: '1rem' }}>
+                <Image src={ARSENAL_SVG} alt="Arsenal" width={32} height={38} unoptimized style={{ marginBottom: 14, display: 'block' }} />
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ fontFamily: 'Mona Sans, sans-serif', fontSize: '0.55rem', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', margin: '0 0 6px', fontWeight: 600 }}>Arsenal FC · Premier League</p>
+                  <h2 style={{ fontFamily: 'Kegilka, serif', fontWeight: 400, fontSize: 'clamp(2.2rem, 8vw, 3rem)', lineHeight: 1, color: '#fff', margin: 0 }}>The Gunner</h2>
+                </div>
+                <div onClick={(e) => e.stopPropagation()} style={{ marginBottom: 22 }}>
+                  <FillButton label="TAP TO EXPLORE" onClick={() => setShow(true)} />
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span style={{ display: 'block', height: 4, borderRadius: 2, background: mobileIdx === 0 ? '#fff' : 'rgba(255,255,255,0.3)', width: mobileIdx === 0 ? 24 : 8, transition: 'width 0.3s ease, background 0.3s ease' }} />
+                  <span style={{ display: 'block', height: 4, borderRadius: 2, background: mobileIdx === 1 ? '#fff' : 'rgba(255,255,255,0.3)', width: mobileIdx === 1 ? 24 : 8, transition: 'width 0.3s ease, background 0.3s ease' }} />
+                </div>
+              </div>
+            </motion.div>
 
-            {/* Vertical "England" label — pinned to RIGHT edge */}
-            <div className="absolute pointer-events-none z-20" style={{ right: 24, top: '50%', transform: 'translateY(-50%)', opacity: active === 'country' ? 0 : 1, transition: 'opacity 350ms ease' }}>
-              <span style={{ fontFamily: 'Mona Sans, sans-serif', writingMode: 'vertical-rl', transform: 'rotate(180deg)', display: 'block', letterSpacing: '0.5em', fontSize: '0.95rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', fontWeight: 500, textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}>England</span>
-            </div>
           </div>
-
-          <div className="absolute top-0 bottom-0 w-px pointer-events-none z-10" style={{ left: active === 'club' ? '80%' : '20%', background: 'rgba(255,255,255,0.12)', transition: `left ${PANEL_DUR} ${PANEL_EASING}` }} />
         </motion.section>
       </div>
 
@@ -547,7 +699,12 @@ export default function ClubAndCountry() {
                   <div
                     data-overlay-scroll
                     ref={engScrollContainerRef}
-                    style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden' }}
+                    style={{
+                      position: 'absolute', inset: 0,
+                      overflowY: 'auto', overflowX: 'hidden',
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-y',
+                    }}
                   >
                     {/* ── SECTION A: HERO ──────────────────────────────── */}
                     <section style={{ position: 'relative', height: '100vh', minHeight: 600 }}>
@@ -592,21 +749,21 @@ export default function ClubAndCountry() {
                               {...fade(0.22, 18)}
                               style={{
                                 fontFamily: 'Mona Sans, sans-serif',
-                                fontSize: '0.8125rem',
+                                fontSize: 'var(--body-text-size)',
                                 lineHeight: 1.7,
                                 color: ENG_FG_DIM,
                                 margin: 0,
                               }}
                             >
-                              {ENG_DESCRIPTION}
+                              {englandDescription}
                             </motion.p>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0 }}>
                               {[
-                                <EngTile key="caps"  label="Caps"    value={<><CountUp to={liveStats.engCaps}     start={contentReadyEngland} delay={0.05} />+</>} />,
-                                <EngTile key="goals" label="Goals"   value={<CountUp to={liveStats.engGoals}    start={contentReadyEngland} delay={0.10} />} />,
-                                <EngTile key="ast"   label="Assists" value={<CountUp to={liveStats.engAssists}  start={contentReadyEngland} delay={0.15} />} />,
-                                <EngTile key="ga"    label="G+A"     value={<CountUp to={liveStats.engGA}       start={contentReadyEngland} delay={0.20} />} />,
+                                <EngTile key="caps"  label="Caps"    value={<><CountUp to={englandStats.caps}     start={contentReadyEngland} delay={0.05} />+</>} />,
+                                <EngTile key="goals" label="Goals"   value={<CountUp to={englandStats.goals}    start={contentReadyEngland} delay={0.10} />} />,
+                                <EngTile key="ast"   label="Assists" value={<CountUp to={englandStats.assists}  start={contentReadyEngland} delay={0.15} />} />,
+                                <EngTile key="ga"    label="G+A"     value={<CountUp to={englandStats.ga}       start={contentReadyEngland} delay={0.20} />} />,
                                 <EngTile key="shirt" label="Shirt"   value={`#${liveStats.shirt}`} />,
                                 <EngTile key="sig">
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
@@ -649,7 +806,7 @@ export default function ClubAndCountry() {
                     <div style={{ height: 80 }} />
 
                     {/* ── SECTION B: IMMERSIVE STORY — z-depth parallax scroll ── */}
-                    <EnglandStoryImmersive progress={engProgress} />
+                    <EnglandStoryImmersive progress={engProgress} chapters={careerChapters} />
                   </div>
 
                   {/* X close */}
@@ -796,13 +953,13 @@ export default function ClubAndCountry() {
                               {...fade(0.22, 18)}
                               style={{
                                 fontFamily: 'Mona Sans, sans-serif',
-                                fontSize: '0.8125rem',
+                                fontSize: 'var(--body-text-size)',
                                 lineHeight: 1.7,
                                 color: 'rgba(255,255,255,0.62)',
                                 margin: 0,
                               }}
                             >
-                              {STORY}
+                              {arsenalStory}
                             </motion.p>
 
                             {/* Stats card */}
@@ -922,7 +1079,7 @@ export default function ClubAndCountry() {
 
                     {/* ── SECTION C: TROPHIES & AWARDS ───────────────── */}
                     <div className="overlay-section-gap">
-                      <TrophyCabinet inOverlay />
+                      <TrophyCabinet inOverlay trophies={trophies} />
                     </div>
                   </div>
 

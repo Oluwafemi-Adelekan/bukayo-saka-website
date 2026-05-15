@@ -1,9 +1,9 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import Image from 'next/image'
 import { useScroll, useTransform, motion, useMotionValueEvent } from 'framer-motion'
 import GrainOverlay from './GrainOverlay'
+import type { SanityMilestone } from '@/lib/sanity/queries'
 
 // ── Scroll keyframes ──────────────────────────────────────────────────────────
 const DEBUT_TEXT_OUT   = 0.069
@@ -38,7 +38,10 @@ const DEBUT_SRC   = 'https://res.cloudinary.com/dinsvbrfd/video/upload/v17784313
 const FACUP_SRC   = 'https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431412/Saka_FA_Cup_WIn_iznyfk.mp4'
 const ENGLAND_SRC = 'https://res.cloudinary.com/dinsvbrfd/video/upload/v1778432260/Saka_England_Debut_g6q3zn.mp4'
 
-export default function ProfessionalDebut() {
+export default function ProfessionalDebut({ milestones }: { milestones?: SanityMilestone[] }) {
+  const debut   = milestones?.find(m => m.type === 'debut')
+  const facup   = milestones?.find(m => m.type === 'facup')
+  const england = milestones?.find(m => m.type === 'england_callup')
   const containerRef  = useRef<HTMLDivElement>(null)
   const debutLayerRef = useRef<HTMLDivElement>(null)
   const facupLayerRef = useRef<HTMLDivElement>(null)
@@ -233,7 +236,7 @@ export default function ProfessionalDebut() {
 
         {/* ─ PROFESSIONAL DEBUT text ────────────────────────────────────────── */}
         <div ref={textLayerRef} className="absolute inset-0 z-30 pointer-events-none" style={{ opacity: 1 }}>
-          <div className="absolute top-[80px] md:top-[104px] left-4 md:left-6 max-w-xs md:max-w-md">
+          <div className="absolute top-[80px] md:top-[104px] left-4 md:left-6 right-4 md:right-6">
             <h2
               className={`transition-all duration-700 ease-out ${
                 hasEnteredView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
@@ -248,7 +251,7 @@ export default function ProfessionalDebut() {
                 fontWeight: 400,
                 color: '#ffffff',
               }}>
-                PROFESSIONAL
+                {debut?.heading ?? 'PROFESSIONAL'}
               </span>
               <span style={{
                 display: 'block',
@@ -258,7 +261,7 @@ export default function ProfessionalDebut() {
                 fontWeight: 300,
                 color: '#ffffff',
               }}>
-                DEBUT
+                {debut?.subheading ?? 'DEBUT'}
               </span>
             </h2>
             <p
@@ -267,14 +270,14 @@ export default function ProfessionalDebut() {
               }`}
               style={{
                 fontFamily: 'Mona Sans, sans-serif',
-                fontSize: '0.875rem',
+                fontSize: 'var(--body-text-size)',
                 lineHeight: 1.72,
-                color: 'rgba(255,255,255,0.78)',
+                color: '#ffffff',
                 margin: 0,
-                maxWidth: 360,
+                maxWidth: 600,
               }}
             >
-              Makes his senior Arsenal debut on 29 November 2018 in the UEFA Europa League against Vorskla Poltava, aged 17. The journey officially begins.
+              {debut?.body ?? 'Makes his senior Arsenal debut on 29 November 2018 in the UEFA Europa League against Vorskla Poltava, aged 17. The journey officially begins.'}
             </p>
           </div>
           <div className="absolute bottom-4 md:bottom-6 right-4 md:right-6">
@@ -284,7 +287,7 @@ export default function ProfessionalDebut() {
               }`}
               style={{ fontFamily: 'Kegilka, serif', WebkitTextStroke: '2px white' }}
             >
-              2018
+              {debut?.year ?? '2018'}
             </span>
           </div>
         </div>
@@ -322,8 +325,8 @@ export default function ProfessionalDebut() {
         {/* ─ FA CUP WINNER text ─────────────────────────────────────────────── */}
         <div
           ref={infoRef}
-          className="absolute z-30 max-w-xs md:max-w-md pointer-events-none"
-          style={{ opacity: 0, transform: 'translateX(30px)', left: textPos.left, top: textPos.top }}
+          className="absolute z-30 pointer-events-none"
+          style={{ opacity: 0, transform: 'translateX(30px)', left: textPos.left, top: textPos.top, maxWidth: 600 }}
           suppressHydrationWarning
         >
           <h2 style={{ margin: '0 0 18px', padding: 0, lineHeight: 0.88 }}>
@@ -335,7 +338,7 @@ export default function ProfessionalDebut() {
               fontWeight: 400,
               color: '#ffffff',
             }}>
-              FA CUP
+              {facup?.heading ?? 'FA CUP'}
             </span>
             <span style={{
               display: 'block',
@@ -345,21 +348,18 @@ export default function ProfessionalDebut() {
               fontWeight: 300,
               color: '#ffffff',
             }}>
-              WINNER
+              {facup?.subheading ?? 'WINNER'}
             </span>
           </h2>
           <p style={{
             fontFamily: 'Mona Sans, sans-serif',
-            fontSize: '0.875rem',
+            fontSize: 'var(--body-text-size)',
             lineHeight: 1.72,
-            color: 'rgba(255,255,255,0.78)',
+            color: '#ffffff',
             margin: 0,
-            maxWidth: 360,
+            maxWidth: 600,
           }}>
-            Arsenal lift their 14th FA Cup on 1 August 2020, defeating Chelsea
-            2–1 in front of a ghost Wembley. Aubameyang, twice — the second a
-            cool-headed penalty. Arteta&apos;s first trophy as manager. And Saka,
-            18 years old, on the pitch for every second of it.
+            {facup?.body ?? "Arsenal lift their 14th FA Cup on 1 August 2020, defeating Chelsea 2-1 in front of a ghost Wembley. Aubameyang twice, the second a cool-headed penalty. Arteta's first trophy as manager. And Saka, 18 years old, on the pitch for every second of it."}
           </p>
         </div>
 
@@ -370,7 +370,7 @@ export default function ProfessionalDebut() {
           style={{ opacity: 0, transform: 'translateY(20px)' }}
         >
           <span className="text-7xl md:text-9xl text-transparent tracking-tighter" style={{ fontFamily: 'Kegilka, serif', WebkitTextStroke: '2px white' }}>
-            2020
+            {facup?.year ?? '2020'}
           </span>
         </div>
 
@@ -409,7 +409,7 @@ export default function ProfessionalDebut() {
         {/* ─ ENGLAND CALL-UP text ───────────────────────────────────────────── */}
         <div
           ref={engTextRef}
-          className="absolute z-30 top-[80px] md:top-[104px] left-4 md:left-6 max-w-xs md:max-w-md pointer-events-none"
+          className="absolute z-30 top-[80px] md:top-[104px] left-4 md:left-6 right-4 md:right-6 pointer-events-none"
           style={{ opacity: 0, transform: 'translateY(60px)' }}
         >
           <h2 style={{ margin: '0 0 18px', padding: 0, lineHeight: 0.88 }}>
@@ -421,7 +421,7 @@ export default function ProfessionalDebut() {
               fontWeight: 400,
               color: '#ffffff',
             }}>
-              ENGLAND
+              {england?.heading ?? 'ENGLAND'}
             </span>
             <span style={{
               display: 'block',
@@ -431,20 +431,18 @@ export default function ProfessionalDebut() {
               fontWeight: 300,
               color: '#ffffff',
             }}>
-              CALL-UP
+              {england?.subheading ?? 'CALL-UP'}
             </span>
           </h2>
           <p style={{
             fontFamily: 'Mona Sans, sans-serif',
-            fontSize: '0.875rem',
+            fontSize: 'var(--body-text-size)',
             lineHeight: 1.72,
-            color: 'rgba(255,255,255,0.78)',
+            color: '#ffffff',
             margin: 0,
-            maxWidth: 360,
+            maxWidth: 600,
           }}>
-            Called up to the England senior squad for the first time in October 2020, aged 19. Saka stepped onto
-            the international stage with an assist on debut — and never looked back. One of the Three Lions&apos;
-            most important players, he would carry the weight of a nation at Euro 2020 and beyond.
+            {england?.body ?? "Called up to the England senior squad for the first time in October 2020, aged 19. Saka stepped onto the international stage with an assist on debut and never looked back. One of the Three Lions' most important players, he would carry the weight of a nation at Euro 2020 and beyond."}
           </p>
         </div>
 
@@ -458,7 +456,7 @@ export default function ProfessionalDebut() {
             className="text-7xl md:text-9xl text-transparent tracking-tighter"
             style={{ fontFamily: 'Kegilka, serif', WebkitTextStroke: '2px #ffffff' }}
           >
-            2020
+            {england?.year ?? '2020'}
           </span>
         </div>
 

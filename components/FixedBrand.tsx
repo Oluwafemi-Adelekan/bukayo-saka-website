@@ -48,12 +48,13 @@ export default function FixedBrand() {
   if (footerVisible) return null
 
   return (
-    <div className="fixed bottom-4 md:bottom-6 inset-x-0 z-[200] pointer-events-none">
+    <div className="fixed bottom-4 md:bottom-6 inset-x-0 z-[200] pointer-events-none" style={{ overflow: 'visible' }}>
       <motion.div
         ref={containerRef}
         style={{
           scale,
           transformOrigin: 'bottom center',
+          overflow: 'visible',
         }}
         className="absolute bottom-0 left-4 right-4 md:left-6 md:right-6 select-none"
       >

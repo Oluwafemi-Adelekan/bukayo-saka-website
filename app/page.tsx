@@ -10,31 +10,41 @@ import Commercial from '@/components/Commercial'
 import MatchCenter from '@/components/MatchCenter'
 import Footer from '@/components/Footer'
 import SignatureReveal from '@/components/SignatureReveal'
+import {
+  getTrophies,
+  getBTPSlides,
+  getCareerChapters,
+  getMilestones,
+  getSiteSettings,
+} from '@/lib/sanity/queries'
 
-export default function Home() {
+export default async function Home() {
+  // Fetch all Sanity content in parallel — server-side, ISR-cached at 1 hour
+  const [trophies, btpSlides, careerChapters, milestones, settings] = await Promise.all([
+    getTrophies(),
+    getBTPSlides(),
+    getCareerChapters(),
+    getMilestones(),
+    getSiteSettings(),
+  ])
+
   return (
     <main>
       <div style={{ position: 'relative' }}>
-        {/* Signature intro overlay — plays on load, fades out to reveal hero */}
         <SignatureReveal />
         <Hero />
-        {/* Story Intro (EALING BORN) */}
         <StoryIntro />
-        
-        {/* Hale End Academy Section */}
         <HaleEndAcademy />
-
-        {/* Professional Debut → FA Cup Winner → England Call-Up → First England Goal
-            One unified section, one sticky element, no duplicate. */}
-        <ProfessionalDebut />
+        <ProfessionalDebut milestones={milestones} />
         <Number7 />
-
-        {/* Rest of the sections */}
-        <ClubAndCountry />
-        <BeyondThePitch />
+        <ClubAndCountry
+          careerChapters={careerChapters}
+          trophies={trophies}
+          settings={settings}
+        />
+        <BeyondThePitch slides={btpSlides} />
         <Commercial />
         <MatchCenter />
-        {/* Sticky bottom brand — appears once hero is scrolled past, then scrolls up at the very end */}
         <FixedBrand />
       </div>
       <Footer />

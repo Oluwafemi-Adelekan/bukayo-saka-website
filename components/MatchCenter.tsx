@@ -243,14 +243,14 @@ export default function MatchCenter() {
         <p
           style={{
             fontFamily: 'Mona Sans, sans-serif',
-            fontSize: 'clamp(0.7rem, 0.9vw, 0.82rem)',
-            lineHeight: 1.65,
+            fontSize: 'var(--body-text-size)',
+            lineHeight: 'var(--body-line-height)',
             color: 'rgba(255,255,255,0.38)',
             marginBottom: 24,
-            maxWidth: 480,
+            maxWidth: 600,
           }}
         >
-          Stay connected with all the action — upcoming fixtures and events for
+          Stay connected with all the action: upcoming fixtures and events for
           Arsenal and the England national team.
         </p>
 
