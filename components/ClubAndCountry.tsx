@@ -294,7 +294,10 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
   // engTranslateX / engDepthBg / engDepthFg removed — depth is now handled
   // natively by CSS 3D perspective inside EnglandStoryImmersive
 
-  const getCarouselWidth = useCallback(() => carouselRef.current?.offsetWidth ?? window.innerWidth, [])
+  const getCarouselWidth = useCallback(() => {
+    if (typeof window === 'undefined') return 1
+    return carouselRef.current?.offsetWidth ?? window.innerWidth
+  }, [])
 
   // trackX ranges from 0 (Arsenal fully visible) to -cardWidth (Arsenal fully clipped).
   // Map it to a clip-path that grows from the right edge of Arsenal inward.
