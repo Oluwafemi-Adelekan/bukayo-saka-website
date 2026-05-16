@@ -99,6 +99,10 @@ export default function Commercial() {
   const [isHovering, setIsHovering] = useState(false)
   const touchStartXRef = useRef(0)
   const baseTrackXRef = useRef(0)
+  // hasMovedRef distinguishes a TAP (no real movement) from a SWIPE. We only
+  // cancel the auto-cycle's pending state swap on actual movement — a tap on
+  // the carousel during the peel must NOT desync activeIdx from the visuals.
+  const hasMovedRef = useRef(false)
   const animRef = useRef<AnimationPlaybackControls | null>(null)
   const commitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -237,31 +241,42 @@ export default function Commercial() {
             style={{ flex: 1, minHeight: 0, marginTop: 32, marginBottom: 20 }}
             onTouchStart={(e) => {
               touchStartXRef.current = e.touches[0].clientX
-              baseTrackXRef.current = trackX.get()
-              // Cancel any in-flight auto-cycle peel AND its pending state swap
-              // so a tap doesn't accidentally advance the carousel behind the
-              // user's back.
-              if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current)
-              animRef.current?.stop()
-              setIsHovering(true)
+              hasMovedRef.current = false
+              // IMPORTANT: don't cancel any in-flight commit here. A pure tap
+              // must allow the auto-cycle to finish naturally — cancelling its
+              // setTimeout strands the state at the old activeIdx while the
+              // visuals show the new brand (the bug from the screenshot).
             }}
             onTouchMove={(e) => {
               const dx = e.touches[0].clientX - touchStartXRef.current
+              // First real movement (>5px): the user is swiping, not tapping.
+              // Take over from the auto-cycle now.
+              if (!hasMovedRef.current && Math.abs(dx) > 5) {
+                hasMovedRef.current = true
+                if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current)
+                animRef.current?.stop()
+                baseTrackXRef.current = trackX.get()
+                setIsHovering(true)
+              }
+              if (!hasMovedRef.current) return
+
               const w = getCarouselWidth()
               let next = baseTrackXRef.current + dx
-              // End-stop: at the last brand, don't allow forward drag past 0.
-              // At the first brand, don't allow backward drag past 0. The
-              // carousel is NOT infinite for manual swipes.
+              // End-stop: at the last brand, dampen forward drag past 0.
+              // At the first brand, dampen backward drag past 0. The carousel
+              // is NOT infinite for manual swipes.
               const atLast = activeIdx === brands.length - 1
               const atFirst = activeIdx === 0
-              if (atLast && next < 0) next = next * 0.18   // elastic dead-stop forward
-              if (atFirst && next > 0) next = next * 0.18  // elastic dead-stop backward
-              // Normal elastic resistance past the natural edges
+              if (atLast && next < 0) next = next * 0.18
+              if (atFirst && next > 0) next = next * 0.18
               if (next > w) next = w + (next - w) * 0.25
               if (next < -w) next = -w + (next + w) * 0.25
               trackX.set(next)
             }}
             onTouchEnd={(e) => {
+              // Pure tap (no movement) — let the auto-cycle continue uninterrupted
+              if (!hasMovedRef.current) return
+
               const dx = e.changedTouches[0].clientX - touchStartXRef.current
               const w = getCarouselWidth()
               const threshold = w * 0.22
@@ -272,14 +287,15 @@ export default function Commercial() {
               } else if (dx > threshold && !atFirst) {
                 commit('backward')
               } else {
-                // Below threshold OR at boundary — snap back to 0
                 animRef.current = animate(trackX, 0, PEEL_SPRING)
               }
               setIsHovering(false)
             }}
             onTouchCancel={() => {
-              animRef.current = animate(trackX, 0, PEEL_SPRING)
-              setIsHovering(false)
+              if (hasMovedRef.current) {
+                animRef.current = animate(trackX, 0, PEEL_SPRING)
+                setIsHovering(false)
+              }
             }}
           >
             {/* "Next" underneath layer — visible while trackX < 0 (peeling forward) */}
