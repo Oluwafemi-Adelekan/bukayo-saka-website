@@ -1,89 +1,80 @@
 'use client'
 
-import { useScroll, useTransform, motion } from 'framer-motion'
-import { useEffect, useState, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 
+/**
+ * Small fixed BUKAYO SAKA brand that floats at the bottom of the viewport
+ * between the hero and the footer. The HERO has its own full-width visible
+ * brand in document flow, and the FOOTER has its own as well — this fixed
+ * version only appears in the "in between" scroll range, fading in once the
+ * hero leaves view and fading out as the footer enters view.
+ */
 export default function FixedBrand() {
-  const { scrollY } = useScroll()
-  const [vh, setVh] = useState(1000)
-  const [targetScale, setTargetScale] = useState(0.12)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [heroVisible, setHeroVisible] = useState(true)
   const [footerVisible, setFooterVisible] = useState(false)
 
   useEffect(() => {
-    const handleResize = () => {
-      setVh(window.innerHeight)
-      const finalWidth = window.innerWidth < 768 ? 120 : 160
-      setTargetScale(finalWidth / window.innerWidth)
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-
-    // Observe footer — when it enters the viewport, hide FixedBrand
-    // so it doesn't cover footer content
-    const footer = document.querySelector('footer')
-    if (footer) {
-      const obs = new IntersectionObserver(
-        ([entry]) => setFooterVisible(entry.isIntersecting),
-        { threshold: 0 }
+    const hero = document.querySelector('#hero')
+    let heroObs: IntersectionObserver | null = null
+    if (hero) {
+      heroObs = new IntersectionObserver(
+        ([entry]) => setHeroVisible(entry.isIntersecting),
+        { threshold: 0.05 },
       )
-      obs.observe(footer)
-      return () => {
-        obs.disconnect()
-        window.removeEventListener('resize', handleResize)
-      }
+      heroObs.observe(hero)
     }
 
-    return () => window.removeEventListener('resize', handleResize)
+    const footer = document.querySelector('footer')
+    let footerObs: IntersectionObserver | null = null
+    if (footer) {
+      footerObs = new IntersectionObserver(
+        ([entry]) => setFooterVisible(entry.isIntersecting),
+        { threshold: 0 },
+      )
+      footerObs.observe(footer)
+    }
+
+    return () => {
+      heroObs?.disconnect()
+      footerObs?.disconnect()
+    }
   }, [])
 
-  // Scale down from Hero
-  const scale = useTransform(() => {
-    const currentY = scrollY.get()
-    const heroShrinkProgress = Math.min(1, currentY / (vh * 0.5))
-    return 1 - (1 - targetScale) * heroShrinkProgress
-  })
-
-  // Hide when footer is visible — the footer has its own brand text
-  if (footerVisible) return null
+  const visible = !heroVisible && !footerVisible
 
   return (
-    <div className="fixed bottom-4 md:bottom-6 inset-x-0 z-[200] pointer-events-none" style={{ overflow: 'visible' }}>
+    <div
+      className="fixed bottom-4 md:bottom-6 inset-x-0 z-[200] pointer-events-none flex justify-center"
+      style={{ overflow: 'visible' }}
+    >
       <motion.div
-        ref={containerRef}
-        style={{
-          scale,
-          transformOrigin: 'bottom center',
-          overflow: 'visible',
+        animate={{
+          opacity: visible ? 1 : 0,
+          scale: visible ? 1 : 0.7,
         }}
-        className="absolute bottom-0 left-4 right-4 md:left-6 md:right-6 select-none"
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="select-none"
+        style={{ transformOrigin: 'bottom center' }}
       >
         <svg
-          viewBox="0 0 1050 135"
-          className="block w-full overflow-visible"
+          viewBox="0 0 1000 135"
+          className="block overflow-visible w-[120px] md:w-[160px] h-auto"
           preserveAspectRatio="xMidYMax meet"
           aria-label="Bukayo Saka"
+          overflow="visible"
         >
           <text
             x="0"
             y="128"
             textAnchor="start"
             fontSize="155"
-            textLength="1050"
+            textLength="1000"
             lengthAdjust="spacingAndGlyphs"
             fill="#ffffff"
             style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}
           >
-            {'BUKAYO SAKA'.split('').map((char, i) => (
-              <motion.tspan
-                key={i}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 + i * 0.05, duration: 0.05 }}
-              >
-                {char}
-              </motion.tspan>
-            ))}
+            BUKAYO SAKA
           </text>
         </svg>
       </motion.div>

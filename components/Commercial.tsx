@@ -95,6 +95,10 @@ export default function Commercial() {
   const slideRef = useRef<HTMLDivElement>(null)
   const carouselRef = useRef<HTMLDivElement>(null)
   const [activeIdx, setActiveIdx] = useState(0)
+  // dotIdx is updated SYNCHRONOUSLY at the moment a swipe / tap commits, while
+  // activeIdx waits for the animation to finish. Dots reflect the user's intent
+  // immediately so the indicator never feels laggy.
+  const [dotIdx, setDotIdx] = useState(0)
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const [isHovering, setIsHovering] = useState(false)
   const touchStartXRef = useRef(0)
@@ -104,7 +108,11 @@ export default function Commercial() {
   // the carousel during the peel must NOT desync activeIdx from the visuals.
   const hasMovedRef = useRef(false)
   const animRef = useRef<AnimationPlaybackControls | null>(null)
-  const commitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Cancellation token for the in-flight commit. Replaces a fixed setTimeout —
+  // state advances tied to the animation's own completion via playback.then(),
+  // so the activeIdx can never get stuck out of sync with trackX even if iOS
+  // throttles timers in the background.
+  const commitTokenRef = useRef<{ cancelled: boolean } | null>(null)
 
   // ── Real-time peel ─────────────────────────────────────────────────────
   // trackX is signed: negative when the user is swiping LEFT (forward → next),
@@ -142,14 +150,14 @@ export default function Commercial() {
 
   // Spring matches FillButton / menu drape easing — calm, with weight.
   const PEEL_SPRING = { type: 'spring' as const, stiffness: 55, damping: 17, mass: 1.3 }
-  // Spring of those params settles in ~0.85s. We swap state slightly after.
-  const PEEL_SETTLE_MS = 900
 
-  // Commit a peel: animate trackX off-screen in the given direction, then swap
-  // activeIdx and reset trackX. State swap is on a setTimeout that's cleaned up
-  // on unmount and on re-entry — no setState-after-unmount warnings.
+  // Commit a peel: animate trackX off-screen, and swap activeIdx exactly when
+  // the animation actually finishes (via playback.then()), not on a fixed
+  // timer. A cancellation token guards the success path so an interrupted
+  // commit (user grabs the carousel mid-animation) can't fire a late state
+  // update.
   const commit = useCallback((direction: 'forward' | 'backward') => {
-    if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current)
+    if (commitTokenRef.current) commitTokenRef.current.cancelled = true
     animRef.current?.stop()
 
     const w = getCarouselWidth()
@@ -158,11 +166,24 @@ export default function Commercial() {
       ? (activeIdx + 1) % brands.length
       : (activeIdx - 1 + brands.length) % brands.length
 
-    animRef.current = animate(trackX, target, PEEL_SPRING)
-    commitTimeoutRef.current = setTimeout(() => {
-      setActiveIdx(newIdx)
-      trackX.set(0)
-    }, PEEL_SETTLE_MS)
+    const token = { cancelled: false }
+    commitTokenRef.current = token
+
+    // Update dotIdx IMMEDIATELY so the indicator snaps to the new brand the
+    // instant the swipe commits — no waiting on the spring to settle.
+    setDotIdx(newIdx)
+
+    const playback = animate(trackX, target, PEEL_SPRING)
+    animRef.current = playback
+
+    playback.then(() => {
+      // Only land the activeIdx update if this exact commit is still the latest
+      if (!token.cancelled && commitTokenRef.current === token) {
+        setActiveIdx(newIdx)
+        trackX.set(0)
+        commitTokenRef.current = null
+      }
+    })
   }, [activeIdx, getCarouselWidth, trackX])
 
   // Detect mobile via matchMedia (kept in sync on viewport resize).
@@ -192,7 +213,7 @@ export default function Commercial() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current)
+      if (commitTokenRef.current) commitTokenRef.current.cancelled = true
       animRef.current?.stop()
     }
   }, [])
@@ -253,7 +274,7 @@ export default function Commercial() {
               // Take over from the auto-cycle now.
               if (!hasMovedRef.current && Math.abs(dx) > 5) {
                 hasMovedRef.current = true
-                if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current)
+                if (commitTokenRef.current) commitTokenRef.current.cancelled = true
                 animRef.current?.stop()
                 baseTrackXRef.current = trackX.get()
                 setIsHovering(true)
@@ -323,19 +344,20 @@ export default function Commercial() {
                 onClick={() => {
                   if (i === activeIdx) return
                   // Cancel any in-flight peel + state swap, then jump
-                  if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current)
+                  if (commitTokenRef.current) commitTokenRef.current.cancelled = true
                   animRef.current?.stop()
                   trackX.set(0)
                   setActiveIdx(i)
+                  setDotIdx(i)
                 }}
                 aria-label={`Show brand ${i + 1}`}
                 style={{
-                  width: i === activeIdx ? 24 : 8,
+                  width: i === dotIdx ? 24 : 8,
                   height: 4,
                   borderRadius: 2,
                   border: 'none',
                   padding: 0,
-                  background: i === activeIdx ? '#ffffff' : 'rgba(255,255,255,0.3)',
+                  background: i === dotIdx ? '#ffffff' : 'rgba(255,255,255,0.3)',
                   transition: 'width 0.3s ease, background 0.3s ease',
                   cursor: 'pointer',
                 }}
