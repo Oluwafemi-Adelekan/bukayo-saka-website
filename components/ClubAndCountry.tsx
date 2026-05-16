@@ -313,10 +313,18 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
   const sx = useSpring(cx, { damping: 22, stiffness: 600, mass: 0.3 })
   const sy = useSpring(cy, { damping: 22, stiffness: 600, mass: 0.3 })
 
-  // Mount detection for portal + touch detection
+  // Mount detection for portal + touch detection.
+  // Use `(hover: hover) and (pointer: fine)` instead of `ontouchstart` — the
+  // latter is true on every Windows laptop with a touchscreen even when the
+  // user is driving the page with a mouse, which hid the desktop cursor.
+  // matchMedia distinguishes "primary mouse-like pointer" from "touch-only".
   useEffect(() => {
     setMounted(true)
-    setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0)
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)')
+    const updateIsTouch = () => setIsTouch(!mq.matches)
+    updateIsTouch()
+    mq.addEventListener('change', updateIsTouch)
+    return () => mq.removeEventListener('change', updateIsTouch)
   }, [])
 
   // Track mouse globally; cursor only renders when over the section
@@ -366,7 +374,10 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
     }
   }, [showEngland])
 
-  // Scroll-driven horizontal pan — smooth wheel inertia + progress tracking
+  // Scroll-driven horizontal pan — smooth wheel inertia (desktop) /
+  // native scroll (touch). On touch devices we MUST NOT run the raf-lerp,
+  // because it force-snaps container.scrollTop and fights native touch
+  // scroll — making the overlay un-scrollable on phones.
   useEffect(() => {
     if (!showEngland) {
       engProgress.set(0)
@@ -375,9 +386,7 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
     const container = engScrollContainerRef.current
     if (!container) return
 
-    let targetScroll = container.scrollTop
-    let currentScroll = container.scrollTop
-    let rafId: number
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
     const updateProgress = (scrollTop: number) => {
       const { scrollHeight, clientHeight } = container
@@ -386,6 +395,19 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
       const p = storyRange > 0 ? Math.max(0, Math.min(1, (scrollTop - storyStart) / storyRange)) : 0
       engProgress.set(p)
     }
+
+    // Touch: let the browser handle scroll natively, just track progress.
+    if (isTouch) {
+      const onScroll = () => updateProgress(container.scrollTop)
+      container.addEventListener('scroll', onScroll, { passive: true })
+      updateProgress(container.scrollTop)
+      return () => container.removeEventListener('scroll', onScroll)
+    }
+
+    // Desktop: hijack wheel and run smooth lerp toward target.
+    let targetScroll = container.scrollTop
+    let currentScroll = container.scrollTop
+    let rafId: number
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()

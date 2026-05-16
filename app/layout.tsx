@@ -137,7 +137,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#09090b] text-white overflow-x-hidden antialiased">
+      <body className="bg-[#09090b] text-white overflow-x-clip antialiased">
         <SmoothScroll />
         <Navigation />
         {children}

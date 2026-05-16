@@ -45,7 +45,10 @@ body {
   background: var(--color-obsidian);
   color: #ffffff;
   font-family: var(--font-body);
-  overflow-x: hidden;
+  /* `clip` prevents horizontal overflow WITHOUT creating a scroll container,
+     so position:sticky descendants still stick to the viewport on iOS Safari.
+     `overflow-x: hidden` breaks sticky on iOS — never use it on <body>/<html>. */
+  overflow-x: clip;
 }
 
 /* Hide all scrollbars — scroll is driven by Lenis */
