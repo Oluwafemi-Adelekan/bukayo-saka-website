@@ -286,7 +286,7 @@ export default function Footer() {
           }}
         >
           <svg
-            viewBox="0 0 1000 135"
+            viewBox="0 0 1050 135"
             className="block w-full overflow-visible"
             preserveAspectRatio="xMidYMax meet"
             aria-label="Bukayo Saka"
@@ -296,7 +296,7 @@ export default function Footer() {
               y="128"
               textAnchor="start"
               fontSize="155"
-              textLength="1000"
+              textLength="1050"
               lengthAdjust="spacingAndGlyphs"
               fill="#ffffff"
               style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}

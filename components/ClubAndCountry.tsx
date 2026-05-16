@@ -632,17 +632,10 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
               }}
               onClick={() => setShowEngland(true)}
             >
-              {/* Image fallback always renders. The video fades in only once
-                  England becomes the active card (post-commit), and fades out
-                  the moment it's no longer active. */}
+              {/* Mobile: image only — no video. The grayscale filter on the
+                  parent dims the inactive side so the active card always reads
+                  as the focal one. */}
               <Image src="/Saka England National.png" alt="Saka England" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized />
-              <motion.div
-                style={{ position: 'absolute', inset: 0 }}
-                animate={{ opacity: mobileIdx === 1 ? 1 : 0 }}
-                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431397/The_Lions_Cover_mbuqbm.mp4" />
-              </motion.div>
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 50%, transparent 100%)' }} />
               <div style={{ position: 'absolute', bottom: '3rem', left: '1rem', right: '1rem' }}>
                 <Image src={ENGLAND_SVG} alt="England" width={28} height={33} unoptimized style={{ marginBottom: 14, display: 'block' }} />
@@ -671,13 +664,6 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
               onClick={() => setShow(true)}
             >
               <Image src="/Saka Arsenal.png" alt="Saka Arsenal" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized priority />
-              <motion.div
-                style={{ position: 'absolute', inset: 0 }}
-                animate={{ opacity: mobileIdx === 0 ? 1 : 0 }}
-                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431370/The_Gunner_Cover_zowdp8.mp4" />
-              </motion.div>
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 50%, transparent 100%)' }} />
               <div style={{ position: 'absolute', bottom: '3rem', left: '1rem', right: '1rem' }}>
                 <Image src={ARSENAL_SVG} alt="Arsenal" width={32} height={38} unoptimized style={{ marginBottom: 14, display: 'block' }} />
@@ -1151,7 +1137,7 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                   >
                     <div className="w-[120px] md:w-[160px]">
                       <svg
-                        viewBox="0 0 1000 135"
+                        viewBox="0 0 1050 135"
                         className="block w-full overflow-visible"
                         preserveAspectRatio="xMidYMax meet"
                         aria-label="Bukayo Saka"
@@ -1161,7 +1147,7 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                           y="128"
                           textAnchor="start"
                           fontSize="155"
-                          textLength="1000"
+                          textLength="1050"
                           lengthAdjust="spacingAndGlyphs"
                           fill="rgba(255,255,255,0.45)"
                           style={{

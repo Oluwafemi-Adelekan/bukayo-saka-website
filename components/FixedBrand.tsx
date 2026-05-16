@@ -59,7 +59,7 @@ export default function FixedBrand() {
         className="absolute bottom-0 left-4 right-4 md:left-6 md:right-6 select-none"
       >
         <svg
-          viewBox="0 0 1000 135"
+          viewBox="0 0 1050 135"
           className="block w-full overflow-visible"
           preserveAspectRatio="xMidYMax meet"
           aria-label="Bukayo Saka"
@@ -69,7 +69,7 @@ export default function FixedBrand() {
             y="128"
             textAnchor="start"
             fontSize="155"
-            textLength="1000"
+            textLength="1050"
             lengthAdjust="spacingAndGlyphs"
             fill="#ffffff"
             style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}

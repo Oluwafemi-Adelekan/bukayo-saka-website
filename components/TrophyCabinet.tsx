@@ -152,10 +152,8 @@ export default function TrophyCabinet({ inOverlay = false, trophies }: Props) {
   return (
     <section
       id="trophies"
-      className="relative w-full overflow-hidden"
+      className="trophy-cabinet relative w-full overflow-hidden"
       style={{
-        // 24px web, 16px mobile — consistent on all sides
-        padding: 'clamp(16px, 2vw, 24px)',
         background: inOverlay ? 'transparent' : '#7B1218',
         height: '100vh',
         minHeight: '600px',
@@ -290,6 +288,16 @@ export default function TrophyCabinet({ inOverlay = false, trophies }: Props) {
       </div>
 
       <style jsx>{`
+        /* 24px web, 16px mobile on top/sides — bottom 64px on mobile to clear
+           the BUKAYO SAKA brand inside the overlay (matches BeyondThePitch) */
+        .trophy-cabinet {
+          padding: clamp(16px, 2vw, 24px);
+        }
+        @media (max-width: 767px) {
+          .trophy-cabinet {
+            padding-bottom: 64px;
+          }
+        }
         .trophy-grid {
           display: flex;
           flex-direction: column;

@@ -111,7 +111,7 @@ export default function Hero() {
           style={{ opacity: 0, pointerEvents: 'none', flexShrink: 0 }}
         >
           <svg
-            viewBox="0 0 1000 135"
+            viewBox="0 0 1050 135"
             style={{ display: 'block', width: '100%', overflow: 'visible' }}
             aria-hidden
           >
@@ -119,7 +119,7 @@ export default function Hero() {
               x="0" y="128"
               textAnchor="start"
               fontSize="155"
-              textLength="1000"
+              textLength="1050"
               lengthAdjust="spacingAndGlyphs"
               fill="transparent"
               style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}

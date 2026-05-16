@@ -260,7 +260,7 @@ function BeyondOverlay({ onClose, slides }: { onClose: () => void; slides: Slide
       >
         <div className="w-[120px] md:w-[160px]">
           <svg
-            viewBox="0 0 1000 135"
+            viewBox="0 0 1050 135"
             className="block w-full overflow-visible"
             preserveAspectRatio="xMidYMax meet"
             aria-label="Bukayo Saka"
@@ -269,7 +269,7 @@ function BeyondOverlay({ onClose, slides }: { onClose: () => void; slides: Slide
               x="0" y="128"
               textAnchor="start"
               fontSize="155"
-              textLength="1000"
+              textLength="1050"
               lengthAdjust="spacingAndGlyphs"
               fill="rgba(255,255,255,0.18)"
               style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}
