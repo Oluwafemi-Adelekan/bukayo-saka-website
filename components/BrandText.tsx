@@ -10,29 +10,25 @@ type Props = {
   color?: string
 }
 
+const TEXT = 'BUKAYO SAKA'
+
 /**
  * BUKAYO SAKA brand text that fills its container's width.
  *
  * Uses plain HTML <span> with a font-size measured to fit the actual rendered
- * width — NO SVG. iOS WebKit doesn't ship the SVG text quirks when we let the
- * browser lay out HTML text natively.
+ * width — NO SVG.
  *
- * Two key CSS tricks that fix the "glyphs overflow the wrapper" problem with
- * Kegilka's tall vertical metrics:
+ * The hidden reference and the visible element use the SAME structure (the
+ * text split into per-character <span>s) so that measurement matches rendered
+ * width on every browser regardless of how it handles kerning across inline
+ * boundaries. iOS WebKit doesn't kern across span boundaries the way
+ * Chromium does, and that mismatch is what was making the last "A" spill
+ * past the container on iOS.
  *
- *   text-box-trim: trim-both;
- *   text-box-edge: cap alphabetic;
- *
- * They trim the line-box to the actual visible glyph extent (cap top down to
- * the baseline), so the wrapper height EQUALS the visible text height. No
- * ghost ascender/descender padding above or below.
- *
- * Supported in Chrome 133+, iOS Safari 18.2+, and Edge. Firefox falls back to
- * normal line-box behavior (slight extra space above/below) — acceptable.
- *
- * Measurement is on a SEPARATE absolute-positioned reference at a fixed
- * 100px reference size, isolated from the visible element so animations and
- * trim CSS can't interfere with the measurement.
+ * text-box-trim collapses the line-box to the visible glyph extent
+ * (cap-top → baseline) so the wrapper height matches the visible text.
+ * Supported on iOS Safari 18.2+ and Chrome 133+; older browsers fall back
+ * to normal line-box behavior, which is what we had before.
  */
 export default function BrandText({
   className = '',
@@ -41,6 +37,7 @@ export default function BrandText({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLSpanElement>(null)
+  const lastWidthRef = useRef<number>(0)
   const [fontSize, setFontSize] = useState<number>(0)
   const animId = useId().replace(/:/g, '')
 
@@ -51,6 +48,12 @@ export default function BrandText({
       if (!container || !text) return
       const containerWidth = container.offsetWidth
       if (containerWidth <= 0) return
+      // Skip re-measurement when container width hasn't actually changed.
+      // iOS Safari fires `resize` on every toolbar show/hide even though the
+      // container width is unchanged — without this guard those events were
+      // causing transient measurements and visible jitter.
+      if (containerWidth === lastWidthRef.current && fontSize > 0) return
+      lastWidthRef.current = containerWidth
       const naturalWidth = text.getBoundingClientRect().width
       if (naturalWidth > 0) {
         // -1px safety buffer guards against subpixel rounding overflow.
@@ -64,22 +67,18 @@ export default function BrandText({
     }
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [])
+  }, [fontSize])
 
   const ready = fontSize > 0
 
-  // text-box-trim trims the line-box to cap-height → baseline so the
-  // wrapper's height matches the visible glyphs exactly. The vendor-prefixed
-  // -webkit-* form is included for iOS Safari versions before the unprefixed
-  // form fully landed.
   const trimStyle: React.CSSProperties = {
-    // Standard
     textBoxTrim: 'trim-both',
     textBoxEdge: 'cap alphabetic',
-    // Webkit fallback (older iOS Safari pre-18.2 may understand these)
     WebkitTextBoxTrim: 'trim-both',
     WebkitTextBoxEdge: 'cap alphabetic',
   } as React.CSSProperties
+
+  const chars = TEXT.split('')
 
   return (
     <div
@@ -87,8 +86,10 @@ export default function BrandText({
       className={className}
       style={{ position: 'relative', textAlign: 'center', lineHeight: 1 }}
     >
-      {/* Hidden absolute reference at a known size, isolated from the visible
-          element so animations and trim never affect measurement. */}
+      {/* Hidden reference — same per-character structure as the visible text,
+          just no animation. This is the key: structurally identical so the
+          reported width MATCHES the rendered width on every browser, regardless
+          of how kerning is handled across span boundaries. */}
       <span
         ref={measureRef}
         aria-hidden
@@ -105,12 +106,12 @@ export default function BrandText({
           top: 0,
         }}
       >
-        BUKAYO SAKA
+        {chars.map((char, i) => (
+          <span key={i}>{char === ' ' ? ' ' : char}</span>
+        ))}
       </span>
 
-      {/* Visible text — inline-block so it shrinks to text width and centers
-          within the parent. text-box-trim collapses the line-box to the
-          visible glyph extent (cap top → baseline). */}
+      {/* Visible text — same per-character structure with the staggered fade. */}
       <span
         style={{
           fontFamily: 'Kegilka, serif',
@@ -125,21 +126,21 @@ export default function BrandText({
           ...trimStyle,
         }}
       >
-        {staggerDelay > 0 ? (
-          'BUKAYO SAKA'.split('').map((char, i) => (
-            <span
-              key={i}
-              style={{
-                opacity: 0,
-                animation: `brand-fade-${animId} 0.18s ${staggerDelay + i * 0.05}s both`,
-              }}
-            >
-              {char === ' ' ? ' ' : char}
-            </span>
-          ))
-        ) : (
-          'BUKAYO SAKA'
-        )}
+        {chars.map((char, i) => (
+          <span
+            key={i}
+            style={
+              staggerDelay > 0
+                ? {
+                    opacity: 0,
+                    animation: `brand-fade-${animId} 0.18s ${staggerDelay + i * 0.05}s both`,
+                  }
+                : undefined
+            }
+          >
+            {char === ' ' ? ' ' : char}
+          </span>
+        ))}
       </span>
 
       {staggerDelay > 0 && (
