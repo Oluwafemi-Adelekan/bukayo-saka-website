@@ -145,7 +145,7 @@ export default function NextMatch() {
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.9, delay: 2.2, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.9, delay: 8.2, ease: [0.22, 1, 0.36, 1] }}
       className="w-full md:max-w-[380px]"
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0 }}>

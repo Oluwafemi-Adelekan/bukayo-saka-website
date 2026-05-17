@@ -245,7 +245,13 @@ export default function Footer() {
     target: brandRef,
     offset: ['start end', 'start start'],
   })
-  const brandScale = useTransform(brandProgress, [0, 0.5], [0.12, 1])
+  // Defensive: explicit clamp so brandScale can NEVER exceed 1, even if the
+  // useTransform default ever changes or scroll progress overshoots. Prevents
+  // the "huge B fills the viewport" bug we saw on mobile.
+  const brandScale = useTransform(brandProgress, (v) => {
+    const clamped = Math.max(0, Math.min(0.5, v))
+    return 0.12 + (clamped / 0.5) * (1 - 0.12)
+  })
 
   useEffect(() => { setMounted(true) }, [])
 

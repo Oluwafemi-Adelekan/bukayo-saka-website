@@ -111,7 +111,10 @@ export default function Hero() {
           style={{ flexShrink: 0 }}
           aria-label="Bukayo Saka"
         >
-          <BrandText staggerDelay={0.6} />
+          {/* Stagger starts AFTER the SignatureReveal loader fades out
+              (loader is shown for 6.5s then exits over 1.2s) — otherwise
+              the brand wave plays behind the loader and never gets seen. */}
+          <BrandText staggerDelay={7.0} />
         </div>
       </motion.div>
     </section>

@@ -46,12 +46,20 @@ export default function FixedBrand() {
 
   return (
     <div
-      className="fixed bottom-4 md:bottom-6 inset-x-0 z-[200] pointer-events-none flex justify-center"
-      style={{ overflow: 'visible' }}
+      className="fixed inset-x-0 z-[200] pointer-events-none flex justify-center"
+      style={{
+        // safe-area-inset-bottom keeps the brand clear of iOS' home indicator
+        // and stays consistent during Safari's address-bar show/hide animations
+        bottom: 'max(1rem, env(safe-area-inset-bottom))',
+        overflow: 'visible',
+      }}
     >
       <motion.div
         animate={{
-          opacity: visible ? 1 : 0,
+          // Subtle opacity (matches the low-alpha treatment inside the
+          // Arsenal/England/BeyondThePitch overlays) so the floating brand
+          // sits in the background instead of competing with content
+          opacity: visible ? 0.35 : 0,
           scale: visible ? 1 : 0.7,
         }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
