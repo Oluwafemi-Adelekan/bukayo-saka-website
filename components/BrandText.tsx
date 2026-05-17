@@ -11,6 +11,10 @@ type Props = {
 }
 
 const TEXT = 'BUKAYO SAKA'
+// Non-breaking space rendered for the inter-word gap. A regular ' ' inside an
+// inline-block character span gets collapsed by the browser's default white
+// space rules, which made the text render as "BUKAYOSAKA" with no gap.
+const NBSP = ' '
 
 /**
  * BUKAYO SAKA brand text that fills its container's width.
@@ -116,7 +120,7 @@ export default function BrandText({
       >
         {chars.map((char, i) => (
           <span key={i} style={{ display: 'inline-block' }}>
-            {char === ' ' ? ' ' : char}
+            {char === ' ' ? NBSP : char}
           </span>
         ))}
       </span>
@@ -150,7 +154,7 @@ export default function BrandText({
                 : { display: 'inline-block' }
             }
           >
-            {char === ' ' ? ' ' : char}
+            {char === ' ' ? NBSP : char}
           </span>
         ))}
       </span>

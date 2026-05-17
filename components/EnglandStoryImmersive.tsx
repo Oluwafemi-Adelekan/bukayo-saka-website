@@ -69,22 +69,30 @@ const CHAPTERS = [
     headingZ: -7700,
     headingX: 0,
     headingY: -8,
+    // z = -8900: at final camera position (SCENE_DEPTH = 8800), effective z
+    // = -100 → ~92% perspective scale. Punches in ~25% from the previous
+    // 73% so the images fill the viewport instead of leaving big white gaps,
+    // while still leaving room for all four to coexist in the 4 quadrants.
+    // All four at the same Z so none is buried behind another in stacking.
     images: [
-      { src: '/Euro 2024.jpg',   alt: 'Euro 2024', x: -26, y:  5, z: -8200 },
-      { src: '/Euro 2024 2.png', alt: 'Euro 2024', x:  20, y: -9, z: -8600 },
-      { src: '/Euro 2024 3.jpg', alt: 'Euro 2024', x:  -6, y: 16, z: -9000 },
-      { src: '/Euro 2024 4.jpg', alt: 'Euro 2024', x:  26, y: 12, z: -9000 },
+      { src: '/Euro 2024.jpg',   alt: 'Euro 2024', x: -30, y: -12, z: -8900 },
+      { src: '/Euro 2024 2.png', alt: 'Euro 2024', x:  30, y: -12, z: -8900 },
+      { src: '/Euro 2024 3.jpg', alt: 'Euro 2024', x: -28, y:  20, z: -8900 },
+      { src: '/Euro 2024 4.jpg', alt: 'Euro 2024', x:  28, y:  20, z: -8900 },
     ],
   },
 ]
 
-// ── Draggable image — spring-lagged drag + velocity throw + 2% hover zoom ────
+// ── Draggable image — spring-lagged drag + 2% hover zoom ────
 // Spring settings: moderate stiffness gives the soft "pulling through honey"
-// feel while dragging, then the throw carries momentum after release.
+// feel while dragging. Throw momentum was disabled (THROW=0) because users
+// reported losing track of images after a fast flick — the image would shoot
+// to a position outside the visible area or behind another image and become
+// hard to re-grab. With THROW=0 the image stays where you dropped it.
 const SPRING = { stiffness: 80, damping: 20, mass: 1.2 }
-const THROW  = 160   // px of extra travel per px/ms of release velocity
+const THROW  = 0
 
-function DraggableImage({ src, alt }: { src?: string; alt?: string }) {
+function DraggableImage({ src, alt, isMagnet = false }: { src?: string; alt?: string; isMagnet?: boolean }) {
   const rawX    = useMotionValue(0)
   const rawY    = useMotionValue(0)
   const springX = useSpring(rawX, SPRING)
@@ -100,10 +108,20 @@ function DraggableImage({ src, alt }: { src?: string; alt?: string }) {
 
   return (
     <motion.div
-      style={{ x: springX, y: springY, touchAction: 'none', userSelect: 'none',
-               cursor: dragging ? 'grabbing' : 'grab' }}
-      whileHover={!dragging ? { scale: 1.02 } : {}}
-      transition={{ scale: { duration: 0.3, ease: 'easeOut' } }}
+      style={{
+        x: springX,
+        y: springY,
+        touchAction: 'none',
+        userSelect: 'none',
+        cursor: dragging ? 'grabbing' : 'grab',
+      }}
+      // Scale comes from the JS magnet detection in the parent. When the
+      // cursor is the nearest visible image (within snap threshold), the
+      // image scales up ~8% — visual "snap" feedback that this is the
+      // grabbable target AND simultaneously enlarges the hit area so the
+      // click lands easily even at depth.
+      animate={{ scale: dragging ? 1 : isMagnet ? 1.08 : 1 }}
+      transition={{ scale: { duration: 0.25, ease: 'easeOut' } }}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId)
         draggingRef.current = true
@@ -141,7 +159,9 @@ function DraggableImage({ src, alt }: { src?: string; alt?: string }) {
           height: 'auto',
           width: 'auto',
           maxHeight: `min(${IMAGE_HEIGHT}px, 45vh)`,
-          maxWidth: '70vw',
+          // 55vw on mobile so 4 images in 4 quadrants don't overlap
+          // horizontally; 420px cap keeps desktop sizes unchanged.
+          maxWidth: 'min(55vw, 420px)',
           userSelect: 'none',
           pointerEvents: 'none',
         }}
@@ -194,6 +214,10 @@ export default function EnglandStoryImmersive({ progress, chapters }: Props) {
   const velocityRef     = useRef(0)
   const prevProgressRef = useRef(0)
   const perspRef        = useRef(PERSPECTIVE)
+
+  // Magnet target — index of the nearest visible image to the cursor
+  const [magnetIdx, setMagnetIdx] = useState<number>(-1)
+  const magnetIdxRef = useRef<number>(-1)
 
   // Mouse position — normalised −1 … +1
   const mouseXRef = useRef(0)
@@ -285,15 +309,54 @@ export default function EnglandStoryImmersive({ progress, chapters }: Props) {
     return () => cancelAnimationFrame(rafId)
   }, [progress, cameraZ])
 
+  // Snap threshold — how close (in px) the cursor needs to be to a visible
+  // image's bounding rect to "snap" to it. The active image scales up to
+  // give the user clear feedback ("you've locked onto this one") and the
+  // bigger visual hit area makes the click land easily.
+  const MAGNET_THRESHOLD = 80
+
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect()
     mouseXRef.current = (e.clientX - r.left  - r.width  / 2) / (r.width  / 2)
     mouseYRef.current = (e.clientY - r.top   - r.height / 2) / (r.height / 2)
+
+    // Magnetic snap: find the visible image whose bounding rect is closest
+    // to the cursor. Distance is 0 when cursor is inside the rect.
+    const cx = e.clientX
+    const cy = e.clientY
+    let nearestIdx = -1
+    let nearestDist = MAGNET_THRESHOLD
+    for (let i = 0; i < sceneItemsRef.current.length; i++) {
+      if (sceneItemsRef.current[i].type !== 'image') continue
+      const el = itemRefs.current[i]
+      if (!el) continue
+      // Only consider images that are actually painted (alpha > 0.5)
+      const op = parseFloat(el.style.opacity || '0')
+      if (op < 0.5) continue
+      const rect = el.getBoundingClientRect()
+      if (rect.width === 0) continue
+      const dx = Math.max(rect.left - cx, 0, cx - rect.right)
+      const dy = Math.max(rect.top - cy, 0, cy - rect.bottom)
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      // Tie-breaker: prefer later DOM index (last-painted = topmost stack)
+      if (dist < nearestDist || (dist === nearestDist && i > nearestIdx)) {
+        nearestDist = dist
+        nearestIdx = i
+      }
+    }
+    if (nearestIdx !== magnetIdxRef.current) {
+      magnetIdxRef.current = nearestIdx
+      setMagnetIdx(nearestIdx)
+    }
   }, [])
 
   const handleMouseLeave = useCallback(() => {
     mouseXRef.current = 0
     mouseYRef.current = 0
+    if (magnetIdxRef.current !== -1) {
+      magnetIdxRef.current = -1
+      setMagnetIdx(-1)
+    }
   }, [])
 
   const setItemRef = useCallback((idx: number) => (el: HTMLDivElement | null) => {
@@ -385,9 +448,9 @@ export default function EnglandStoryImmersive({ progress, chapters }: Props) {
 
               ) : (
 
-                /* ── Image — spring drag + hover zoom ── */
+                /* ── Image — spring drag + magnet snap ── */
                 <div style={{ transform: 'translate(-50%, -50%)' }}>
-                  <DraggableImage src={item.src} alt={item.alt} />
+                  <DraggableImage src={item.src} alt={item.alt} isMagnet={magnetIdx === i} />
                 </div>
 
               )}
