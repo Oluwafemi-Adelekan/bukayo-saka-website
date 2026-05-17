@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import GrainOverlay from './GrainOverlay'
 import FillButton from './FillButton'
+import BrandText from './BrandText'
 
 // ─── Legal overlay (shared shell) ──────────────────────────────────────────
 function LegalOverlay({
@@ -285,26 +286,8 @@ export default function Footer() {
             overflow: 'visible',
           }}
         >
-          <svg
-            viewBox="0 0 1000 135"
-            className="block w-full overflow-visible"
-            preserveAspectRatio="xMidYMax meet"
-            aria-label="Bukayo Saka"
-            overflow="visible"
-          >
-            <text
-              x="0"
-              y="128"
-              textAnchor="start"
-              fontSize="155"
-              textLength="1000"
-              lengthAdjust="spacingAndGlyphs"
-              fill="#ffffff"
-              style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}
-            >
-              BUKAYO SAKA
-            </text>
-          </svg>
+          <BrandText staggerDelay={0} />
+
         </motion.div>
 
         {/* ── Get in touch ── */}

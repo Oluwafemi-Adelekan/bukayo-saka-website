@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
+import BrandText from './BrandText'
 
 /**
  * Small fixed BUKAYO SAKA brand that floats at the bottom of the viewport
@@ -57,26 +58,7 @@ export default function FixedBrand() {
         className="select-none"
         style={{ transformOrigin: 'bottom center' }}
       >
-        <svg
-          viewBox="0 0 1000 135"
-          className="block overflow-visible w-[120px] md:w-[160px] h-auto"
-          preserveAspectRatio="xMidYMax meet"
-          aria-label="Bukayo Saka"
-          overflow="visible"
-        >
-          <text
-            x="0"
-            y="128"
-            textAnchor="start"
-            fontSize="155"
-            textLength="1000"
-            lengthAdjust="spacingAndGlyphs"
-            fill="#ffffff"
-            style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}
-          >
-            BUKAYO SAKA
-          </text>
-        </svg>
+        <BrandText className="w-[120px] md:w-[160px]" staggerDelay={0} />
       </motion.div>
     </div>
   )

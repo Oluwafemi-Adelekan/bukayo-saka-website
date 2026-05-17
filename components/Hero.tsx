@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import NextMatch from './NextMatch'
 import GrainOverlay from './GrainOverlay'
+import BrandText from './BrandText'
 
 export default function Hero() {
   const ref = useRef<HTMLDivElement>(null)
@@ -102,44 +103,15 @@ export default function Hero() {
         <div className="relative z-10 px-4 md:px-6 md:translate-y-10 pointer-events-auto">
           <NextMatch />
         </div>
-        {/* Visible BUKAYO SAKA brand — part of the hero's normal flow, fills
-            the container width. The fixed/floating version (FixedBrand) is
-            hidden while this is on-screen and appears only after the hero
-            scrolls out of view. Putting the big brand in document flow avoids
-            the iOS WebKit getBBox/clipping issues that the absolute-positioned
-            version was running into. */}
+        {/* Visible BUKAYO SAKA brand — plain HTML text sized to fill the
+            container width. Letters fade in left-to-right via BrandText's
+            internal stagger. */}
         <div
-          className="block px-4 md:px-6 pb-4 md:pb-6 mt-5 md:mt-16"
+          className="px-4 md:px-6 pb-4 md:pb-6 mt-5 md:mt-16"
           style={{ flexShrink: 0 }}
+          aria-label="Bukayo Saka"
         >
-          <svg
-            viewBox="0 0 1000 135"
-            className="block w-full overflow-visible"
-            preserveAspectRatio="xMidYMax meet"
-            aria-label="Bukayo Saka"
-            overflow="visible"
-          >
-            <text
-              x="0" y="128"
-              textAnchor="start"
-              fontSize="155"
-              textLength="1000"
-              lengthAdjust="spacingAndGlyphs"
-              fill="#ffffff"
-              style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}
-            >
-              {'BUKAYO SAKA'.split('').map((char, i) => (
-                <motion.tspan
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 + i * 0.05, duration: 0.05 }}
-                >
-                  {char}
-                </motion.tspan>
-              ))}
-            </text>
-          </svg>
+          <BrandText staggerDelay={0.6} />
         </div>
       </motion.div>
     </section>
