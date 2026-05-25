@@ -14,16 +14,72 @@ export default function Hero() {
   useEffect(() => {
     let player: YT.Player | null = null
     let poll: ReturnType<typeof setInterval> | null = null
+    let revealTimer: ReturnType<typeof setTimeout> | null = null
+    let loopGuard: ReturnType<typeof setInterval> | null = null
+    let qualityWarmup: ReturnType<typeof setInterval> | null = null
     let cancelled = false
-    // Fallback: remove mask after 4 s even if YT never fires PLAYING
-    const fallback = setTimeout(() => { if (!cancelled) setMaskGone(true) }, 4000)
-
+    const preferBestQuality = (target: YT.Player) => {
+      const qualityPlayer = target as YT.Player & {
+        getAvailableQualityLevels?: () => string[]
+        setPlaybackQuality?: (quality: string) => void
+      }
+      const preferred = ['highres', 'hd2160', 'hd1440', 'hd1080', 'hd720', 'large']
+      const available = qualityPlayer.getAvailableQualityLevels?.() || []
+      const quality = preferred.find((level) => available.includes(level)) || 'hd1080'
+      qualityPlayer.setPlaybackQuality?.(quality)
+    }
+    const warmQualityPreference = (target: YT.Player) => {
+      if (qualityWarmup) clearInterval(qualityWarmup)
+      let attempts = 0
+      qualityWarmup = setInterval(() => {
+        if (cancelled || attempts > 10) {
+          if (qualityWarmup) clearInterval(qualityWarmup)
+          qualityWarmup = null
+          return
+        }
+        try { preferBestQuality(target) } catch {}
+        attempts += 1
+      }, 900)
+    }
+    const revealWhenSettled = () => {
+      if (revealTimer) clearTimeout(revealTimer)
+      // YouTube can flash its chrome for a beat after PLAYING. Keep that behind
+      // the cover layer and reveal only after the background has settled.
+      revealTimer = setTimeout(() => {
+        if (!cancelled) setMaskGone(true)
+      }, 1800)
+    }
     const init = () => {
       if (cancelled || !iframeRef.current) return
       player = new YT.Player(iframeRef.current, {
         events: {
+          onReady: (e: YT.PlayerEvent) => {
+            try {
+              e.target.mute()
+              preferBestQuality(e.target)
+              warmQualityPreference(e.target)
+              e.target.playVideo()
+              loopGuard = setInterval(() => {
+                if (cancelled || !player) return
+                try {
+                  const duration = player.getDuration()
+                  const current = player.getCurrentTime()
+                  if (duration > 0 && current > duration - 1.5) {
+                    player.seekTo(1, true)
+                    player.playVideo()
+                  }
+                } catch {}
+              }, 400)
+            } catch {}
+          },
           onStateChange: (e: YT.OnStateChangeEvent) => {
-            if (e.data === YT.PlayerState.PLAYING && !cancelled) setMaskGone(true)
+            if (e.data === YT.PlayerState.PLAYING && !cancelled) {
+              try { preferBestQuality(e.target) } catch {}
+              revealWhenSettled()
+            }
+          },
+          onError: () => {
+            if (!cancelled) setMaskGone(false)
           },
         },
       })
@@ -48,7 +104,9 @@ export default function Hero() {
 
     return () => {
       cancelled = true
-      clearTimeout(fallback)
+      if (revealTimer) clearTimeout(revealTimer)
+      if (loopGuard) clearInterval(loopGuard)
+      if (qualityWarmup) clearInterval(qualityWarmup)
       if (poll) clearInterval(poll)
       if (player && typeof player.destroy === 'function') { try { player.destroy() } catch {} }
     }
@@ -73,7 +131,7 @@ export default function Hero() {
         <iframe
           ref={iframeRef}
           id="yt-hero-player"
-          src="https://www.youtube-nocookie.com/embed/q180SEl5Sgs?autoplay=1&mute=1&controls=0&loop=1&playlist=q180SEl5Sgs&rel=0&showinfo=0&modestbranding=1&playsinline=1&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0&start=1&enablejsapi=1"
+          src="https://www.youtube-nocookie.com/embed/q180SEl5Sgs?autoplay=1&mute=1&controls=0&rel=0&showinfo=0&modestbranding=1&playsinline=1&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0&start=1&enablejsapi=1&autohide=1&vq=hd1080&hd=1"
           title="Bukayo Saka Highlights"
           allow="autoplay; encrypted-media"
           className="absolute pointer-events-none"
@@ -87,9 +145,10 @@ export default function Hero() {
           }}
         />
         <div className="absolute inset-0 bg-black/40" />
-        {/* Mask fades out once video is playing (or after 4 s fallback) */}
+        {/* Mask fades out once video playback has settled, hiding YouTube chrome flashes. */}
         <div
-          className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-[1200ms]"
+          className="absolute inset-0 bg-[#09090b] pointer-events-none transition-opacity duration-[1200ms]"
+          aria-hidden="true"
           style={{ opacity: maskGone ? 0 : 1 }}
         />
       </div>

@@ -60,8 +60,7 @@ export default function Number7() {
             alt="Bukayo Saka No. 7"
             fill
             className="object-cover object-top"
-            unoptimized
-            priority
+            sizes="100vw"
           />
         </div>
 

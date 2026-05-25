@@ -238,7 +238,7 @@ export default function Footer() {
   const [showPrivacy, setShowPrivacy] = useState(false)
 
   // Mirror of the hero shrink, but inverted: scroll-tied scale that grows from
-  // FixedBrand's final shrunken state (≈0.12) → full size as the footer enters view.
+  // the same compact starting size to full size as the footer enters view.
   // Range: from "brand top hits viewport bottom" → "brand top hits viewport top".
   const brandRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress: brandProgress } = useScroll({

@@ -153,8 +153,8 @@ function BeyondOverlay({ onClose, slides }: { onClose: () => void; slides: Slide
               src={slide.image}
               alt={slide.headline}
               fill
+              sizes="100vw"
               style={{ objectFit: 'cover', objectPosition: 'center' }}
-              unoptimized
             />
             <div style={{
               position: 'absolute', inset: 0,
@@ -218,14 +218,15 @@ function BeyondOverlay({ onClose, slides }: { onClose: () => void; slides: Slide
         })}
       </motion.div>
 
-      {/* Headline + body — bottom: 64px (clears BUKAYO SAKA brand below), same left as nav */}
+      {/* Headline + body — same left edge as nav, 16px mobile bottom rhythm */}
       <motion.div
         key={current.id}
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease }}
+        className="absolute bottom-4"
         style={{
-          position: 'absolute', bottom: 64, left: CONTENT_X, right: 16,
+          left: CONTENT_X, right: 16,
           zIndex: 30, pointerEvents: 'none',
         }}
       >
@@ -247,37 +248,6 @@ function BeyondOverlay({ onClose, slides }: { onClose: () => void; slides: Slide
         }}>
           {current.body}
         </p>
-      </motion.div>
-
-      {/* BUKAYO SAKA brand — same as Arsenal/England overlays */}
-      <motion.div
-        {...fade(0.55, 8)}
-        style={{
-          position: 'absolute', bottom: 24, left: 0, right: 0,
-          display: 'flex', justifyContent: 'center',
-          pointerEvents: 'none', userSelect: 'none', zIndex: 40,
-        }}
-      >
-        <div className="w-[120px] md:w-[160px]">
-          <svg
-            viewBox="0 0 1050 135"
-            className="block w-full overflow-visible"
-            preserveAspectRatio="xMidYMax meet"
-            aria-label="Bukayo Saka"
-          >
-            <text
-              x="0" y="128"
-              textAnchor="start"
-              fontSize="155"
-              textLength="1050"
-              lengthAdjust="spacingAndGlyphs"
-              fill="rgba(255,255,255,0.18)"
-              style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}
-            >
-              BUKAYO SAKA
-            </text>
-          </svg>
-        </div>
       </motion.div>
 
       {/* X close */}
@@ -425,7 +395,7 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
             </div>
 
             {/* ── Right column: cover image ── */}
-            <div className="flex-1 flex items-end justify-end pl-4 pr-4 pb-6 md:pl-0 md:pr-6 md:pb-6 min-h-0 overflow-hidden">
+            <div className="flex-1 flex items-end justify-end pl-4 pr-4 pb-4 md:pl-0 md:pr-6 md:pb-6 min-h-0 overflow-hidden">
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -437,7 +407,7 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
                   alt="Beyond the Pitch"
                   width={1200}
                   height={900}
-                  unoptimized
+                  sizes="(max-width: 767px) 92vw, 50vw"
                   style={{
                     maxHeight: 'min(58vh, calc(100vh - 200px))',
                     width: 'auto',

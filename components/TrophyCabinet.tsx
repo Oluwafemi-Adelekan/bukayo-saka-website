@@ -13,7 +13,10 @@ type Award = {
   years: string
 }
 
+const PREMIER_LEAGUE_CHAMPION_IMAGE = '/saka-epl-champion.webp'
+
 const AWARDS_FALLBACK: Award[] = [
+  { label: 'Premier League Champions',            count: 1, image: PREMIER_LEAGUE_CHAMPION_IMAGE,                years: '2025/26' },
   { label: 'FA Cup Wins',                         count: 1, image: '/FA Cup Win.png',                            years: '2020' },
   { label: 'Community Shield',                    count: 2, image: '/Community Shield.png',                      years: '2020, 2023' },
   { label: 'PFA Young Player of the Year',        count: 1, image: '/PFA Young player of the year.png',          years: '2022' },
@@ -145,9 +148,15 @@ type Props = {
 }
 
 export default function TrophyCabinet({ inOverlay = false, trophies }: Props) {
-  const AWARDS = trophies?.length ? trophies : AWARDS_FALLBACK
+  const sourceAwards = trophies?.length ? trophies : AWARDS_FALLBACK
+  const AWARDS = sourceAwards.map((award) =>
+    award.label.toLowerCase().includes('premier league champions')
+      ? { ...award, image: PREMIER_LEAGUE_CHAMPION_IMAGE }
+      : award
+  )
   const [active, setActive] = useState(0)
   const stat = AWARDS[active]
+  const preserveAspect = stat.label.toLowerCase().includes('premier league champions')
 
   return (
     <section
@@ -211,10 +220,11 @@ export default function TrophyCabinet({ inOverlay = false, trophies }: Props) {
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 style={{
-                  height: IMAGE_HEIGHT,
-                  width: 'auto',
+                  height: '100%',
+                  width: '100%',
                   display: 'block',
-                  objectFit: 'cover',
+                  objectFit: preserveAspect ? 'contain' : 'cover',
+                  objectPosition: preserveAspect ? 'center' : 'left center',
                   position: 'absolute',
                   top: 0,
                   left: 0,
@@ -288,14 +298,13 @@ export default function TrophyCabinet({ inOverlay = false, trophies }: Props) {
       </div>
 
       <style jsx>{`
-        /* 24px web, 16px mobile on top/sides — bottom 64px on mobile to clear
-           the BUKAYO SAKA brand inside the overlay (matches BeyondThePitch) */
+        /* 24px web, 16px mobile. */
         .trophy-cabinet {
           padding: clamp(16px, 2vw, 24px);
         }
         @media (max-width: 767px) {
           .trophy-cabinet {
-            padding-bottom: 64px;
+            padding-bottom: 16px;
           }
         }
         .trophy-grid {

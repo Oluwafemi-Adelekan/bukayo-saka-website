@@ -176,9 +176,11 @@ export default function NextMatch() {
               {match.homeTeamCrest && (
                 <img src={match.homeTeamCrest} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
               )}
-              <span style={{ fontFamily: 'Kegilka, serif', fontSize: '0.9rem', color: '#fff', fontWeight: 400, whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
-                {shortName(match.homeTeam)}
-              </span>
+              {!isScored && (
+                <span style={{ fontFamily: 'Kegilka, serif', fontSize: '0.9rem', color: '#fff', fontWeight: 400, whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
+                  {shortName(match.homeTeam)}
+                </span>
+              )}
             </div>
 
             {/* VS / Score */}
@@ -195,9 +197,11 @@ export default function NextMatch() {
               {match.awayTeamCrest && (
                 <img src={match.awayTeamCrest} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
               )}
-              <span style={{ fontFamily: 'Kegilka, serif', fontSize: '0.9rem', color: '#fff', fontWeight: 400, whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
-                {shortName(match.awayTeam)}
-              </span>
+              {!isScored && (
+                <span style={{ fontFamily: 'Kegilka, serif', fontSize: '0.9rem', color: '#fff', fontWeight: 400, whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
+                  {shortName(match.awayTeam)}
+                </span>
+              )}
             </div>
 
           </div>

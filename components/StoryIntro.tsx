@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { useScroll, useTransform, motion, useMotionTemplate, useMotionValueEvent } from 'framer-motion'
+import Image from 'next/image'
 import GrainOverlay from './GrainOverlay'
 
 const DASH = 6000
@@ -13,6 +14,7 @@ export default function StoryIntro() {
   const panel2Ref = useRef<HTMLDivElement>(null)
   const measureRef = useRef<SVGTextElement>(null)
   const [letterX, setLetterX] = useState([120, 155, 190])
+  const compactRef = useRef(false)
 
   useEffect(() => {
     const measure = () => {
@@ -27,6 +29,15 @@ export default function StoryIntro() {
     }
     measure()
     document.fonts.ready.then(measure)
+  }, [])
+
+  useEffect(() => {
+    const updateCompact = () => {
+      compactRef.current = window.innerWidth < 1024
+    }
+    updateCompact()
+    window.addEventListener('resize', updateCompact)
+    return () => window.removeEventListener('resize', updateCompact)
   }, [])
 
   const { scrollYProgress } = useScroll({
@@ -52,6 +63,7 @@ export default function StoryIntro() {
 
   // ─── Imperative scroll handler ────────────────────────────────────────────
   useMotionValueEvent(scrollYProgress, 'change', (v) => {
+    const compact = compactRef.current
     // THE STORY text fades out as curtain opens (0.34 → 0.48)
     if (textRef.current) {
       let op = 1
@@ -63,19 +75,23 @@ export default function StoryIntro() {
       textRef.current.style.opacity = String(Math.max(0, Math.min(1, op)))
     }
 
-    // Panel 1: slides in from 100vh (0.60→0.72), held (0.72→0.80), exits to -100vh (0.80→0.88)
+    // Panel 1: on compact screens it exits before panel 2 enters, avoiding text collisions.
     if (panel1Ref.current) {
       let op = 0
       let ty = '100vh'
-      if (v < 0.60) {
+      const inStart = compact ? 0.58 : 0.60
+      const inEnd = compact ? 0.68 : 0.72
+      const holdEnd = compact ? 0.74 : 0.80
+      const outEnd = compact ? 0.80 : 0.88
+      if (v < inStart) {
         op = 0; ty = '100vh'
-      } else if (v <= 0.72) {
-        const t = (v - 0.60) / (0.72 - 0.60)
+      } else if (v <= inEnd) {
+        const t = (v - inStart) / (inEnd - inStart)
         op = t; ty = `${100 * (1 - t)}vh`
-      } else if (v <= 0.80) {
+      } else if (v <= holdEnd) {
         op = 1; ty = '0vh'
-      } else if (v <= 0.88) {
-        const t = (v - 0.80) / (0.88 - 0.80)
+      } else if (v <= outEnd) {
+        const t = (v - holdEnd) / (outEnd - holdEnd)
         op = 1 - t; ty = `${-100 * t}vh`
       } else {
         op = 0; ty = '-100vh'
@@ -84,14 +100,16 @@ export default function StoryIntro() {
       panel1Ref.current.style.transform = `translateY(${ty})`
     }
 
-    // Panel 2: slides in from 100vh (0.78→0.88), then held
+    // Panel 2: starts later on compact screens so it gets a clean viewport.
     if (panel2Ref.current) {
       let op = 0
       let ty = '100vh'
-      if (v < 0.78) {
+      const inStart = compact ? 0.82 : 0.78
+      const inEnd = compact ? 0.92 : 0.88
+      if (v < inStart) {
         op = 0; ty = '100vh'
-      } else if (v <= 0.88) {
-        const t = (v - 0.78) / (0.88 - 0.78)
+      } else if (v <= inEnd) {
+        const t = (v - inStart) / (inEnd - inStart)
         op = t; ty = `${100 * (1 - t)}vh`
       } else {
         op = 1; ty = '0vh'
@@ -111,9 +129,11 @@ export default function StoryIntro() {
           style={{ clipPath }}
           className="absolute inset-0 z-[1]"
         >
-          <img
+          <Image
             src="/Ealry Life.png"
             alt="Ealing, London"
+            fill
+            sizes="100vw"
             className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/70" />

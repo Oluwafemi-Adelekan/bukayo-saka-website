@@ -2,15 +2,16 @@
 
 import { useRef } from 'react'
 import { useScroll, useTransform, motion, useMotionTemplate } from 'framer-motion'
+import Image from 'next/image'
 import GrainOverlay from './GrainOverlay'
 
 const PORTRAIT = '/sm4_9629_vertical2-1541x2472.png'
 
 const GALLERY = [
-  { src: '/under-10-120311pafc-3105x2023.webp',                     alt: 'Hale End Under-10 squad',        pos: 'top',    width: 'w-[60vw] md:w-[24vw]' },
-  { src: '/arsenal-u15-v-swindon-u15-11-160901mafc-2740x2055.webp', alt: 'Saka in action for Arsenal U15', pos: 'bottom', width: 'w-[65vw] md:w-[26vw]' },
-  { src: '/arsenal-v-juve-5-lbc-170401pafc-3000x2225.jpg',          alt: 'Arsenal youth action',           pos: 'top',    width: 'w-[60vw] md:w-[24vw]' },
-  { src: '/gettyimages-928190422-3000x2093.jpg',                     alt: 'Saka celebrating',              pos: 'bottom', width: 'w-[65vw] md:w-[26vw]' },
+  { src: '/under-10-120311pafc-3105x2023.webp',                     alt: 'Hale End Under-10 squad',        pos: 'top',    width: 'w-[60vw] md:w-[24vw]', w: 3105, h: 2023 },
+  { src: '/Saka Hale End Academy 2.png',                            alt: 'Saka in action for Hale End Academy', pos: 'bottom', width: 'w-[65vw] md:w-[26vw]', w: 2740, h: 2055 },
+  { src: '/arsenal-v-juve-5-lbc-170401pafc-3000x2225.jpg',          alt: 'Arsenal youth action',           pos: 'top',    width: 'w-[60vw] md:w-[24vw]', w: 3000, h: 2225 },
+  { src: '/gettyimages-928190422-3000x2093.jpg',                    alt: 'Saka celebrating',               pos: 'bottom', width: 'w-[65vw] md:w-[26vw]', w: 3000, h: 2093 },
 ]
 
 export default function HaleEndAcademy() {
@@ -41,11 +42,15 @@ export default function HaleEndAcademy() {
             className="hidden md:block flex-shrink-0"
             style={{ width: '32vw', paddingLeft: 24, paddingTop: 104, paddingBottom: 24, alignSelf: 'stretch' }}
           >
-            <img
-              src={PORTRAIT}
-              alt="Young Bukayo Saka portrait"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-            />
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              <Image
+                src={PORTRAIT}
+                alt="Young Bukayo Saka portrait"
+                fill
+                sizes="32vw"
+                style={{ objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+              />
+            </div>
           </div>
 
           {/* Text block — full width on mobile, sits next to portrait on desktop */}
@@ -94,7 +99,14 @@ export default function HaleEndAcademy() {
                 img.pos === 'top' ? 'self-start mt-[80px] md:mt-[104px]' : 'self-end mb-4 md:mb-6'
               }`}
             >
-              <img src={img.src} alt={img.alt} className="w-full h-auto object-cover block" />
+              <Image
+                src={img.src}
+                alt={img.alt}
+                width={img.w}
+                height={img.h}
+                sizes="(max-width: 767px) 65vw, 26vw"
+                className="w-full h-auto object-cover block"
+              />
             </div>
           ))}
 

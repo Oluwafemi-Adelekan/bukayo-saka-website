@@ -846,24 +846,6 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                     </svg>
                   </motion.button>
 
-                  {/* BUKAYO SAKA — blue tint at bottom */}
-                  <motion.div
-                    {...fade(0.55, 8)}
-                    style={{
-                      position: 'absolute', bottom: 24, left: 0, right: 0,
-                      display: 'flex', justifyContent: 'center',
-                      pointerEvents: 'none', userSelect: 'none', zIndex: 40,
-                    }}
-                  >
-                    <div className="w-[120px] md:w-[160px]">
-                      <svg viewBox="0 0 1000 135" className="block w-full overflow-visible" preserveAspectRatio="xMidYMax meet" aria-label="Bukayo Saka">
-                        <text x="0" y="128" textAnchor="start" fontSize="155" textLength="1000" lengthAdjust="spacingAndGlyphs" fill="rgba(10,25,70,0.2)" style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}>
-                          BUKAYO SAKA
-                        </text>
-                      </svg>
-                    </div>
-                  </motion.div>
-
                   <style jsx>{`
                     @media (max-width: 767px) {
                       /* On mobile the overlay scroll container stacks chapters vertically instead of horizontal pan */
@@ -1033,19 +1015,6 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                       }}
                     >
 
-                      {/* Static signature — no animation in quote section */}
-                      <motion.div
-                        {...scrollFade(0)}
-                        style={{
-                          width: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginBottom: 36,
-                        }}
-                      >
-                        <SignatureStroke className="w-[120px]" startDelay={0} glow={false} />
-                      </motion.div>
 
                       <motion.div
                         {...scrollFade(0.12)}
@@ -1119,47 +1088,6 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                       <path d="M2 2L18 18M18 2L2 18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
                     </svg>
                   </motion.button>
-
-                  {/* BUKAYO SAKA — fixed bottom, SAME size/font/position as FixedBrand shrunk version */}
-                  <motion.div
-                    {...fade(0.55, 8)}
-                    style={{
-                      position: 'absolute',
-                      bottom: 24,
-                      left: 0,
-                      right: 0,
-                      display: 'flex',
-                      justifyContent: 'center',
-                      pointerEvents: 'none',
-                      userSelect: 'none',
-                      zIndex: 40,
-                    }}
-                  >
-                    <div className="w-[120px] md:w-[160px]">
-                      <svg
-                        viewBox="0 0 1050 135"
-                        className="block w-full overflow-visible"
-                        preserveAspectRatio="xMidYMax meet"
-                        aria-label="Bukayo Saka"
-                      >
-                        <text
-                          x="0"
-                          y="128"
-                          textAnchor="start"
-                          fontSize="155"
-                          textLength="1050"
-                          lengthAdjust="spacingAndGlyphs"
-                          fill="rgba(255,255,255,0.45)"
-                          style={{
-                            fontFamily: 'Kegilka, serif',
-                            fontWeight: 400,
-                          }}
-                        >
-                          BUKAYO SAKA
-                        </text>
-                      </svg>
-                    </div>
-                  </motion.div>
 
                   {/* 60px desktop / 32px mobile gap between scrollable sections */}
                   <style jsx>{`
