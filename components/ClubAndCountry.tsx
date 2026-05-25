@@ -67,6 +67,16 @@ const ENG_DESCRIPTION =
   'Joins the Three Lions and makes his mark on the international stage. A breakthrough moment in his young career, representing England at the highest level and becoming a key figure in major tournaments. His performances for the national team brought pride to millions, cementing his place as one of the brightest talents in English football, all before his 20th birthday.'
 
 // ── Background video (Cloudinary, covers panel) ───────────────────────────────
+const SAKA_BIRTHDAY = { year: 2001, monthIndex: 8, day: 5 }
+
+function getSakaAge(date = new Date()) {
+  const hasHadBirthdayThisYear =
+    date.getMonth() > SAKA_BIRTHDAY.monthIndex ||
+    (date.getMonth() === SAKA_BIRTHDAY.monthIndex && date.getDate() >= SAKA_BIRTHDAY.day)
+
+  return date.getFullYear() - SAKA_BIRTHDAY.year - (hasHadBirthdayThisYear ? 0 : 1)
+}
+
 function VideoBg({ src }: { src: string }) {
   return (
     <video
@@ -261,6 +271,8 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
   const englandStats = settings?.englandStats ?? ENG_STATS
   const arsenalStory = settings?.arsenalStory ?? STORY
   const englandDescription = settings?.englandDescription ?? ENG_DESCRIPTION
+  const [sakaAge, setSakaAge] = useState(24)
+  const sakaMeta = ['Starboy', `${sakaAge} Years Old`, 'North London']
 
   const [active, setActive]                         = useState<Side>('club')
   const [showOverlay, setShow]                      = useState(false)
@@ -280,6 +292,10 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
   const sectionRef             = useRef<HTMLDivElement>(null)
   const engScrollContainerRef  = useRef<HTMLDivElement>(null)
   const slideContainerRef      = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setSakaAge(getSakaAge())
+  }, [])
 
   // Slide-up over Number7 — same pattern as Number7 slides over ProfessionalDebut
   const { scrollYProgress: slideProgress } = useScroll({
@@ -746,7 +762,7 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                             fontFamily: 'Mona Sans, sans-serif',
                           }}
                         >
-                          {['Starboy', '25 Years Old', 'North London'].map((item, i) => (
+                          {sakaMeta.map((item, i) => (
                             <span key={item} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                               {i > 0 && <span style={{ color: ENG_FG_DIM, fontSize: '0.6rem' }}>•</span>}
                               <span style={{ color: ENG_FG, fontSize: '0.9rem', fontWeight: 500, letterSpacing: '0.04em' }}>{item}</span>
@@ -929,7 +945,7 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                             fontFamily: 'Mona Sans, sans-serif',
                           }}
                         >
-                          {['Starboy', '25 Years Old', 'North London'].map((item, i) => (
+                          {sakaMeta.map((item, i) => (
                             <span key={item} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                               {i > 0 && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.6rem', lineHeight: 1 }}>•</span>}
                               <span style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.9rem', fontWeight: 500, letterSpacing: '0.04em' }}>
@@ -1016,21 +1032,8 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                     >
 
 
-                      <motion.div
-                        {...scrollFade(0.12)}
-                        style={{
-                          fontFamily: 'Kegilka, serif',
-                          fontSize: 'clamp(1.05rem, 1.5vw, 1.4rem)',
-                          color: 'rgba(255,255,255,0.92)',
-                          fontWeight: 400,
-                          marginBottom: 36,
-                        }}
-                      >
-                        Bukayo Saka
-                      </motion.div>
-
                       <motion.blockquote
-                        {...scrollFade(0.22, 32)}
+                        {...scrollFade(0.12, 32)}
                         style={{
                           margin: 0,
                           textAlign: 'center',
@@ -1055,6 +1058,19 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                           </span>
                         ))}
                       </motion.blockquote>
+
+                      <motion.div
+                        {...scrollFade(0.22)}
+                        style={{
+                          fontFamily: 'Kegilka, serif',
+                          fontSize: 'clamp(1.05rem, 1.5vw, 1.4rem)',
+                          color: 'rgba(255,255,255,0.92)',
+                          fontWeight: 400,
+                          marginTop: 36,
+                        }}
+                      >
+                        Bukayo Saka
+                      </motion.div>
                     </section>
 
                     {/* ── SECTION C: TROPHIES & AWARDS ───────────────── */}
