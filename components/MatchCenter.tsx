@@ -209,7 +209,7 @@ export default function MatchCenter() {
     >
       <GrainOverlay />
 
-      <div className="px-4 md:px-6" style={{ paddingTop: 88, paddingBottom: 64 }}>
+      <div className="px-4 pb-4 md:px-6" style={{ paddingTop: 88 }}>
 
         {/* ── Heading ── */}
         <div style={{ marginBottom: 14 }}>

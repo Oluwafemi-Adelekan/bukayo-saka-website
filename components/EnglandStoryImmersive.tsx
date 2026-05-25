@@ -31,10 +31,10 @@ const PARALLAX_Y = 1.8
 const CHAPTERS = [
   {
     lines: ['INTERNATIONAL', 'DEBUT'],
-    subtitle: 'October 2020 · First England Cap',
+    subtitle: "England's First Cap",
     headingZ: -500,
     headingX: 0,
-    headingY: -10,
+    headingY: 0,
     images: [
       { src: '/October, 2020 vs Republic of Ireland.jpg', alt: 'vs Republic of Ireland, October 2020', x: -22, y:  6, z: -1050 },
       { src: '/Euro 2020 vs Czech Republic.jpg',          alt: 'Euro 2020 vs Czech Republic',          x:  18, y: -8, z: -1600 },
@@ -42,10 +42,10 @@ const CHAPTERS = [
   },
   {
     lines: ['WORLD CUP', '2022'],
-    subtitle: 'Qatar · Group Stage',
+    subtitle: 'Qatar',
     headingZ: -2600,
-    headingX: 4,
-    headingY: -8,
+    headingX: 0,
+    headingY: 0,
     images: [
       { src: '/vs Iran, 2022.jpg',    alt: 'vs Iran, Qatar 2022', x: -28, y:  6, z: -3150 },
       { src: '/World Cup 2022.jpg',   alt: 'World Cup 2022',      x:  22, y:-10, z: -3700 },
@@ -57,18 +57,18 @@ const CHAPTERS = [
     lines: ["ENGLAND MEN'S", 'PLAYER OF', 'THE YEAR'],
     subtitle: '2023',
     headingZ: -5900,
-    headingX: -4,
-    headingY: -8,
+    headingX: 0,
+    headingY: 0,
     images: [
       { src: '/England Player of the Year.png', alt: "England Men's Player of the Year 2023", x: 0, y: 10, z: -6550 },
     ],
   },
   {
     lines: ['EURO', '2024'],
-    subtitle: 'Berlin · Final vs Spain',
+    subtitle: 'Berlin',
     headingZ: -7700,
     headingX: 0,
-    headingY: -8,
+    headingY: 0,
     // z = -8900: at final camera position (SCENE_DEPTH = 8800), effective z
     // = -100 → ~92% perspective scale. Punches in ~25% from the previous
     // 73% so the images fill the viewport instead of leaving big white gaps,
@@ -184,7 +184,15 @@ type ChapterInput = typeof CHAPTERS[number] | SanityCareerChapter
 function buildSceneItems(chapters: ChapterInput[]): SceneItem[] {
   const items: SceneItem[] = []
   for (const ch of chapters) {
-    items.push({ type: 'heading', x: ch.headingX ?? 0, y: ch.headingY ?? 0, z: ch.headingZ, lines: ch.lines, subtitle: ch.subtitle })
+    const title = ch.lines.join(' ')
+    const subtitle =
+      title === 'INTERNATIONAL DEBUT' ? "England's First Cap" :
+      title === 'WORLD CUP 2022' ? 'Qatar' :
+      title === "ENGLAND MEN'S PLAYER OF THE YEAR" ? '2023' :
+      title === 'EURO 2024' ? 'Berlin' :
+      ch.subtitle
+
+    items.push({ type: 'heading', x: 0, y: 0, z: ch.headingZ, lines: ch.lines, subtitle })
     for (const img of ch.images) {
       items.push({ type: 'image', x: img.x, y: img.y, z: img.z, src: img.src ?? undefined, alt: img.alt })
     }
@@ -412,7 +420,7 @@ export default function EnglandStoryImmersive({ progress, chapters }: Props) {
               {item.type === 'heading' ? (
 
                 /* ── Chapter heading ── */
-                <div style={{ transform: 'translate(-50%, -50%)', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                <div style={{ position: 'relative', transform: 'translate(-50%, -50%)', textAlign: 'center', whiteSpace: 'nowrap' }}>
                   <p
                     className="eng-heading"
                     style={{
@@ -438,6 +446,11 @@ export default function EnglandStoryImmersive({ progress, chapters }: Props) {
                       letterSpacing: '0.22em',
                       textTransform: 'uppercase',
                       color: ENG_FG_DIM,
+                      position: 'absolute',
+                      top: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: 'max-content',
                       margin: '18px 0 0',
                       fontWeight: 600,
                     }}
@@ -458,8 +471,8 @@ export default function EnglandStoryImmersive({ progress, chapters }: Props) {
           ))}
         </div>
 
-        {/* Scroll indicator — visible on entry, fades out immediately on scroll */}
-        <div
+        {/* Scroll hint — text only, so it does not read as a stray vertical artifact. */}
+        <motion.div
           style={{
             position: 'absolute',
             bottom: 40,
@@ -467,41 +480,17 @@ export default function EnglandStoryImmersive({ progress, chapters }: Props) {
             transform: 'translateX(-50%)',
             zIndex: 10,
             pointerEvents: 'none',
+            opacity: scrollHintOp,
+            fontFamily: 'Mona Sans, sans-serif',
+            fontSize: '0.55rem',
+            letterSpacing: '0.3em',
+            textTransform: 'uppercase',
+            color: ENG_FG_DIM,
+            userSelect: 'none',
           }}
         >
-          <motion.div
-            style={{
-              opacity: scrollHintOp,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 10,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'Mona Sans, sans-serif',
-                fontSize: '0.55rem',
-                letterSpacing: '0.3em',
-                textTransform: 'uppercase',
-                color: ENG_FG_DIM,
-                userSelect: 'none',
-              }}
-            >
-              Scroll
-            </span>
-            <motion.div
-              style={{
-                width: 1,
-                height: 36,
-                background: ENG_FG_DIM,
-                originY: 0,
-              }}
-              animate={{ scaleY: [1, 0.15, 1], opacity: [0.8, 0.2, 0.8] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          </motion.div>
-        </div>
+          Scroll
+        </motion.div>
 
         {/* Radial vignette to soften the viewport edges */}
         <div

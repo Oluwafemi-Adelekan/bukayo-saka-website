@@ -3,9 +3,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, animate, type AnimationPlaybackControls } from 'framer-motion'
 import Image from 'next/image'
-import { ArrowUpRight } from '@phosphor-icons/react'
 import GrainOverlay from './GrainOverlay'
 import FillButton from './FillButton'
+import RevealArrowCta from './RevealArrowCta'
 
 const brands = [
   {
@@ -36,11 +36,7 @@ const brands = [
 // without being affected by the text height — no layout bouncing.
 function BrandContent({ brand }: { brand: typeof brands[0] }) {
   return (
-    // Solid section background — without this, the active card's transparent
-    // areas (around contained images and between text glyphs) bleed through to
-    // the underneath card and you see both brands' content overlapping. The
-    // clip-path is doing its job; it just has nothing solid to clip.
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#09090b' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Image area */}
       <div style={{ flex: 1, position: 'relative', minHeight: 0, display: 'flex', gap: 8 }}>
         {brand.images.map((src, i) => (
@@ -49,7 +45,7 @@ function BrandContent({ brand }: { brand: typeof brands[0] }) {
               src={src}
               alt={brand.name}
               fill
-              unoptimized
+              sizes="(max-width: 767px) 45vw, 24vw"
               style={{ objectFit: 'contain', objectPosition: 'center bottom' }}
             />
           </div>
@@ -133,6 +129,20 @@ export default function Commercial() {
     if (v < 0) return `inset(0 ${pct}% 0 0)` // peel from right → next visible on right
     if (v > 0) return `inset(0 0 0 ${pct}%)` // peel from left → prev visible on left
     return 'inset(0 0% 0 0)'
+  })
+
+  const nextClip = useTransform(trackX, (v) => {
+    if (v >= 0) return 'inset(0 0 0 100%)'
+    const w = getCarouselWidth()
+    const pct = Math.min(100, (Math.abs(v) / w) * 100)
+    return `inset(0 0 0 ${100 - pct}%)`
+  })
+
+  const prevClip = useTransform(trackX, (v) => {
+    if (v <= 0) return 'inset(0 100% 0 0)'
+    const w = getCarouselWidth()
+    const pct = Math.min(100, (Math.abs(v) / w) * 100)
+    return `inset(0 ${100 - pct}% 0 0)`
   })
 
   // Direction-aware "next" and "prev" underneath layers. We render BOTH and
@@ -239,10 +249,10 @@ export default function Commercial() {
             Real-time Capture One peel — active card on top has clip-path
             tied to trackX, two pre-rendered "next" and "prev" underneath
             layers toggle via opacity off the sign of trackX. */}
-        <div
-          className="md:hidden flex flex-col"
-          style={{ height: '100%', paddingTop: 88, paddingBottom: 64, paddingLeft: 16, paddingRight: 16 }}
-        >
+          <div
+            className="md:hidden flex flex-col"
+            style={{ height: '100%', paddingTop: 88, paddingBottom: 16, paddingLeft: 16, paddingRight: 16 }}
+          >
           {/* Heading — never re-renders between brands, stays put */}
           <motion.h2
             initial={{ opacity: 0, y: 28 }}
@@ -320,12 +330,12 @@ export default function Commercial() {
             }}
           >
             {/* "Next" underneath layer — visible while trackX < 0 (peeling forward) */}
-            <motion.div style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: nextOpacity }}>
+            <motion.div style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: nextOpacity, clipPath: nextClip }}>
               <BrandContent brand={brands[nextIdx]} />
             </motion.div>
 
             {/* "Prev" underneath layer — visible while trackX > 0 (peeling backward) */}
-            <motion.div style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: prevOpacity }}>
+            <motion.div style={{ position: 'absolute', inset: 0, zIndex: 1, opacity: prevOpacity, clipPath: prevClip }}>
               <BrandContent brand={brands[prevIdx]} />
             </motion.div>
 
@@ -335,8 +345,7 @@ export default function Commercial() {
             </motion.div>
           </div>
 
-          {/* Dots — left-aligned, sit 64px above the viewport bottom so the
-              FixedBrand text never overlaps them. */}
+          {/* Dots — left-aligned at the shared mobile bottom rhythm. */}
           <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, flexShrink: 0 }}>
             {brands.map((_, i) => (
               <button
@@ -401,7 +410,7 @@ export default function Commercial() {
                         src={src}
                         alt={active.name}
                         fill
-                        unoptimized
+                        sizes="24vw"
                         style={{ objectFit: 'contain', objectPosition: 'left bottom' }}
                       />
                     </div>
@@ -473,41 +482,15 @@ export default function Commercial() {
                       {brand.desc}
                     </p>
 
-                    {/* CTA row — text reveals on isActive (timer + hover), arrow always left-most */}
-                    <a
+                    {/* CTA row: text reveals on active; arrow stays after the label. */}
+                    <RevealArrowCta
+                      label={brand.cta}
+                      active={isActive}
                       href={brand.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <motion.span
-                        animate={{
-                          opacity: isActive ? 1 : 0,
-                          maxWidth: isActive ? 180 : 0,
-                          paddingRight: isActive ? 6 : 0,
-                        }}
-                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                        style={{
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                          display: 'inline-block',
-                          fontFamily: 'Mona Sans, sans-serif',
-                          fontSize: '0.6rem',
-                          letterSpacing: '0.2em',
-                          textTransform: 'uppercase',
-                          color: '#ffffff',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {brand.cta}
-                      </motion.span>
-                      <ArrowUpRight
-                        size={13}
-                        color={isActive ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)'}
-                        weight="bold"
-                      />
-                    </a>
+                      onClick={(e) => e.stopPropagation()}
+                    />
                   </div>
                 </div>
               )

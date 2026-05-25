@@ -1,9 +1,5 @@
 import Hero from '@/components/Hero'
-import StoryIntro from '@/components/StoryIntro'
-import HaleEndAcademy from '@/components/HaleEndAcademy'
-import ProfessionalDebut from '@/components/ProfessionalDebut'
-import Number7 from '@/components/Number7'
-import FixedBrand from '@/components/FixedBrand'
+import NewStory from '@/components/NewStory'
 import ClubAndCountry from '@/components/ClubAndCountry'
 import BeyondThePitch from '@/components/BeyondThePitch'
 import Commercial from '@/components/Commercial'
@@ -33,10 +29,7 @@ export default async function Home() {
       <div style={{ position: 'relative' }}>
         <SignatureReveal />
         <Hero />
-        <StoryIntro />
-        <HaleEndAcademy />
-        <ProfessionalDebut milestones={milestones} />
-        <Number7 />
+        <NewStory />
         <ClubAndCountry
           careerChapters={careerChapters}
           trophies={trophies}
@@ -45,7 +38,6 @@ export default async function Home() {
         <BeyondThePitch slides={btpSlides} />
         <Commercial />
         <MatchCenter />
-        <FixedBrand />
       </div>
       <Footer />
     </main>

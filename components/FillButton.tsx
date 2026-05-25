@@ -6,13 +6,17 @@ import { motion } from 'framer-motion'
 type Props = {
   label: string
   onClick?: () => void
+  href?: string
+  as?: React.ElementType
 }
 
-export default function FillButton({ label, onClick }: Props) {
+export default function FillButton({ label, onClick, href, as }: Props) {
   const [hovered, setHovered] = useState(false)
+  const Tag = as || (href ? 'a' : 'button')
 
   return (
-    <button
+    <Tag
+      href={href}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -81,6 +85,6 @@ export default function FillButton({ label, onClick }: Props) {
           />
         </svg>
       </span>
-    </button>
+    </Tag>
   )
 }
