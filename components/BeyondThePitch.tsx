@@ -147,7 +147,7 @@ function BeyondOverlay({ onClose, slides }: { onClose: () => void; slides: Slide
         {slides.map((slide) => (
           <div
             key={slide.id}
-            style={{ position: 'relative', height: '100vh', scrollSnapAlign: 'start', overflow: 'hidden' }}
+            style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}
           >
             <Image
               src={slide.image}

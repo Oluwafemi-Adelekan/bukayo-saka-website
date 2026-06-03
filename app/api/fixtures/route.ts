@@ -17,6 +17,57 @@ function apiSportsCrest(id: number) {
 }
 
 const CREST: Record<string, string> = {
+  // National Teams — use flagcdn.com SVGs (reliable, free, correct flags)
+  'England':                   'https://flagcdn.com/gb-eng.svg',
+  'Spain':                     'https://flagcdn.com/es.svg',
+  'Croatia':                   'https://flagcdn.com/hr.svg',
+  'New Zealand':               'https://flagcdn.com/nz.svg',
+  'Costa Rica':                'https://flagcdn.com/cr.svg',
+  'Ghana':                     'https://flagcdn.com/gh.svg',
+  'Panama':                    'https://flagcdn.com/pa.svg',
+  'Czech Republic':            'https://flagcdn.com/cz.svg',
+  'Czechia':                   'https://flagcdn.com/cz.svg',
+  'Brazil':                    'https://flagcdn.com/br.svg',
+  'Argentina':                 'https://flagcdn.com/ar.svg',
+  'France':                    'https://flagcdn.com/fr.svg',
+  'Germany':                   'https://flagcdn.com/de.svg',
+  'Portugal':                  'https://flagcdn.com/pt.svg',
+  'Netherlands':               'https://flagcdn.com/nl.svg',
+  'Belgium':                   'https://flagcdn.com/be.svg',
+  'Italy':                     'https://flagcdn.com/it.svg',
+  'USA':                       'https://flagcdn.com/us.svg',
+  'United States':             'https://flagcdn.com/us.svg',
+  'Mexico':                    'https://flagcdn.com/mx.svg',
+  'Japan':                     'https://flagcdn.com/jp.svg',
+  'South Korea':               'https://flagcdn.com/kr.svg',
+  'Australia':                 'https://flagcdn.com/au.svg',
+  'Canada':                    'https://flagcdn.com/ca.svg',
+  'Scotland':                  'https://flagcdn.com/gb-sct.svg',
+  'Wales':                     'https://flagcdn.com/gb-wls.svg',
+  'Ireland':                   'https://flagcdn.com/ie.svg',
+  'Republic of Ireland':       'https://flagcdn.com/ie.svg',
+  'Denmark':                   'https://flagcdn.com/dk.svg',
+  'Sweden':                    'https://flagcdn.com/se.svg',
+  'Norway':                    'https://flagcdn.com/no.svg',
+  'Switzerland':               'https://flagcdn.com/ch.svg',
+  'Poland':                    'https://flagcdn.com/pl.svg',
+  'Serbia':                    'https://flagcdn.com/rs.svg',
+  'Ukraine':                   'https://flagcdn.com/ua.svg',
+  'Senegal':                   'https://flagcdn.com/sn.svg',
+  'Morocco':                   'https://flagcdn.com/ma.svg',
+  'Nigeria':                   'https://flagcdn.com/ng.svg',
+  'Cameroon':                  'https://flagcdn.com/cm.svg',
+  'Ecuador':                   'https://flagcdn.com/ec.svg',
+  'Colombia':                  'https://flagcdn.com/co.svg',
+  'Uruguay':                   'https://flagcdn.com/uy.svg',
+  'Chile':                     'https://flagcdn.com/cl.svg',
+  'Paraguay':                  'https://flagcdn.com/py.svg',
+  'Peru':                      'https://flagcdn.com/pe.svg',
+  'Tunisia':                   'https://flagcdn.com/tn.svg',
+  'Saudi Arabia':              'https://flagcdn.com/sa.svg',
+  'Iran':                      'https://flagcdn.com/ir.svg',
+  'Qatar':                     'https://flagcdn.com/qa.svg',
+  
   // Premier League
   'Arsenal':                   apiSportsCrest(42),
   'Arsenal FC':                apiSportsCrest(42),
@@ -284,25 +335,71 @@ type SportsDBEvent = {
   strVenue: string | null
 }
 
-async function fetchFromSportsDB(): Promise<Fixture[]> {
-  const res = await fetch(
-    `https://www.thesportsdb.com/api/v1/json/${SPORTDB_PAID_KEY}/eventsnext.php?id=${SPORTSDB_ARSENAL_ID}`,
-    { next: { revalidate: 86400 }, headers: { 'User-Agent': 'BukayoSakaWebsite/1.0' } }
-  )
-  if (!res.ok) throw new Error(`TheSportsDB ${res.status}`)
-  const data: { events: SportsDBEvent[] | null } = await res.json()
-  if (!data.events?.length) throw new Error('TheSportsDB: no events')
-  return data.events.slice(0, 10).map(e => ({
-    homeTeam: e.strHomeTeam,
-    awayTeam: e.strAwayTeam,
-    homeTeamCrest: resolveCrest(e.strHomeTeam, e.strHomeTeamBadge ?? ''),
-    awayTeamCrest: resolveCrest(e.strAwayTeam, e.strAwayTeamBadge ?? ''),
-    date: e.dateEvent,
-    time: e.strTime ? e.strTime.slice(0, 5) : 'TBC',
-    competition: e.strLeague,
-    venue: e.strVenue ?? '',
-    status: 'SCHEDULED',
-  }))
+async function fetchICSFixtures(): Promise<Fixture[]> {
+  const urls = [
+    'https://www.skysports.com/calendars/football/fixtures/teams/arsenal',
+    'https://www.skysports.com/calendars/football/fixtures/teams/england'
+  ]
+  const fixtures: Fixture[] = []
+
+  for (const url of urls) {
+    try {
+      // Avoid next.js caching errors with dynamic fetches by adding simple cache config
+      const res = await fetch(url, { next: { revalidate: 3600 } })
+      if (!res.ok) continue
+      
+      const text = await res.text()
+      const events = text.split('BEGIN:VEVENT').slice(1)
+      
+      for (const ev of events) {
+        const summaryMatch = ev.match(/SUMMARY:(.*)/)
+        const dtstartMatch = ev.match(/DTSTART:(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/)
+        const locationMatch = ev.match(/LOCATION:(.*)/)
+        const descMatch = ev.match(/DESCRIPTION:(.*)/)
+        
+        if (summaryMatch && dtstartMatch) {
+          const summary = summaryMatch[1].trim()
+          const parts = summary.split(' v ')
+          if (parts.length === 2) {
+            const hTeam = parts[0].trim()
+            const aTeam = parts[1].trim()
+            
+            const dateStr = `${dtstartMatch[1]}-${dtstartMatch[2]}-${dtstartMatch[3]}`
+            const timeStr = `${dtstartMatch[4]}:${dtstartMatch[5]}`
+            const loc = locationMatch ? locationMatch[1].replace(/\\;/g, '').replace(/&amp;/g, '&').replace(/amp/g, '').trim() : ''
+            
+            let competition = 'Match'
+            if (descMatch) {
+              const descParts = descMatch[1].split(' - ')
+              if (descParts.length > 2) competition = descParts[2].trim()
+            }
+            
+            const lcComp = competition.toLowerCase()
+            const isMajor = lcComp.includes('world cup') || lcComp.includes('premier league') || lcComp.includes('champions league') || lcComp.includes('fa cup')
+            
+            if (isMajor) {
+              fixtures.push({
+                homeTeam: hTeam,
+                awayTeam: aTeam,
+                homeTeamCrest: resolveCrest(hTeam, ''),
+                awayTeamCrest: resolveCrest(aTeam, ''),
+                date: dateStr,
+                time: timeStr,
+                competition,
+                venue: loc,
+                status: 'SCHEDULED',
+              })
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('ICS parse error for', url, e)
+    }
+  }
+  
+  if (!fixtures.length) throw new Error('No ICS fixtures found')
+  return fixtures
 }
 
 // ─── Merge + deduplicate ──────────────────────────────────────────────────────
@@ -330,7 +427,7 @@ export async function GET() {
 
   try { fixtures = await fetchFromApiFootball() } catch {}
   if (!fixtures.length && FD_KEY) { try { fixtures = await fetchFromFootballData() } catch {} }
-  if (!fixtures.length) { try { fixtures = await fetchFromSportsDB() } catch {} }
+  if (!fixtures.length) { try { fixtures = await fetchICSFixtures() } catch {} }
 
   const merged = mergeFixtures(fixtures, today)
   const final = merged.length > 0 ? merged : KNOWN_REMAINING.filter(f => f.date >= today)

@@ -1,5 +1,6 @@
 'use client'
 
+import { VimeoCover } from './VimeoCover';
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import {
@@ -48,7 +49,7 @@ const storyItems: StoryItem[] = [
     href: '#story',
     media: {
       type: 'video',
-      src: 'https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431396/Arsenal_Professional_Debut_asbpy6.mp4',
+      src: '1198207080',
     },
   },
   {
@@ -58,7 +59,7 @@ const storyItems: StoryItem[] = [
     href: '#story',
     media: {
       type: 'video',
-      src: 'https://res.cloudinary.com/dinsvbrfd/video/upload/v1778432260/Saka_England_Debut_g6q3zn.mp4',
+      src: '1198207081',
     },
   },
 ]
@@ -198,7 +199,7 @@ const storyDetails: Record<string, StoryDetail> = {
       },
       {
         type: 'video',
-        src: 'https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431412/Saka_FA_Cup_WIn_iznyfk.mp4',
+        src: '1198205616',
         variant: 'card',
         aspectRatio: '16 / 9',
         ratio: 16 / 9,
@@ -313,16 +314,7 @@ function StoryBackground({ item, active }: { item: StoryItem; active: boolean })
           style={{ objectFit: 'cover', objectPosition: item.media.position || 'center' }}
         />
       ) : (
-        <video
-          ref={videoRef}
-          src={item.media.src}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload={active ? 'auto' : 'metadata'}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <VimeoCover id={item.media.src} />
       )}
     </motion.div>
   )

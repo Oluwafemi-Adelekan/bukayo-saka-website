@@ -1,5 +1,6 @@
 'use client'
 
+import { VimeoCover } from './VimeoCover';
 import { useRef, useState, useEffect } from 'react'
 import { useScroll, useTransform, motion, useMotionValueEvent } from 'framer-motion'
 import GrainOverlay from './GrainOverlay'
@@ -34,9 +35,9 @@ function interp(v: number, k0: number, k1: number, k2: number, k3: number): numb
   return k2 + (k3 - k2) * t
 }
 
-const DEBUT_SRC   = 'https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431396/Arsenal_Professional_Debut_asbpy6.mp4'
-const FACUP_SRC   = 'https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431412/Saka_FA_Cup_WIn_iznyfk.mp4'
-const ENGLAND_SRC = 'https://res.cloudinary.com/dinsvbrfd/video/upload/v1778432260/Saka_England_Debut_g6q3zn.mp4'
+const DEBUT_ID = '1198207080'
+const FACUP_ID = '1198205616'
+const ENGLAND_ID = '1198207081'
 
 export default function ProfessionalDebut({ milestones }: { milestones?: SanityMilestone[] }) {
   const debut   = milestones?.find(m => m.type === 'debut')
@@ -300,24 +301,12 @@ export default function ProfessionalDebut({ milestones }: { milestones?: SanityM
         >
           <div ref={debutLayerRef} className="absolute inset-0" style={{ opacity: 1 }}>
             {hasEnteredView && (
-              <video
-                src={DEBUT_SRC}
-                autoPlay muted loop playsInline
-                preload="auto"
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                style={{ objectFit: 'cover' }}
-              />
+              <VimeoCover id={DEBUT_ID} />
             )}
           </div>
           <div ref={facupLayerRef} className="absolute inset-0" style={{ opacity: 0 }}>
             {hasEnteredView && (
-              <video
-                src={FACUP_SRC}
-                autoPlay muted loop playsInline
-                preload="auto"
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                style={{ objectFit: 'cover' }}
-              />
+              <VimeoCover id={FACUP_ID} />
             )}
           </div>
         </motion.div>
@@ -381,12 +370,7 @@ export default function ProfessionalDebut({ milestones }: { milestones?: SanityM
           style={{ clipPath: 'inset(0 50% 0 0)', opacity: 0 }}
         >
           {hasEnteredView && (
-            <video
-              src={FACUP_SRC}
-              autoPlay muted loop playsInline
-              preload="auto"
-              style={coverStyle}
-            />
+            <VimeoCover id={FACUP_ID} />
           )}
         </div>
 
@@ -397,12 +381,7 @@ export default function ProfessionalDebut({ milestones }: { milestones?: SanityM
           style={{ clipPath: 'inset(0 0 0 50%)', opacity: 0 }}
         >
           {hasEnteredView && (
-            <video
-              src={FACUP_SRC}
-              autoPlay muted loop playsInline
-              preload="auto"
-              style={coverStyle}
-            />
+            <VimeoCover id={FACUP_ID} />
           )}
         </div>
 
@@ -467,12 +446,7 @@ export default function ProfessionalDebut({ milestones }: { milestones?: SanityM
           style={{ transform: 'translateX(100%)', willChange: 'transform' }}
         >
           {hasEnteredView && (
-            <video
-              src={ENGLAND_SRC}
-              autoPlay muted loop playsInline
-              preload="auto"
-              style={coverStyle}
-            />
+            <VimeoCover id={ENGLAND_ID} />
           )}
         </div>
 

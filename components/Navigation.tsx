@@ -6,7 +6,7 @@ import FillButton from './FillButton'
 
 const links = [
   { label: 'Story', href: '#story', sectionId: 'story' },
-  { label: 'Club & Country', href: '#club-country', sectionId: 'club-country' },
+  { label: 'Club & Country', href: '#club-and-country', sectionId: 'club-and-country' },
   { label: 'Beyond the Pitch', href: '#foundation', sectionId: 'foundation' },
   { label: 'Merch', href: '#commercial', sectionId: 'commercial' },
   { label: 'Fixtures', href: '#fixtures', sectionId: 'fixtures' },

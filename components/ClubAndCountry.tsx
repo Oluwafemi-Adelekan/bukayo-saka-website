@@ -1,5 +1,6 @@
 'use client'
 
+import { VimeoCover } from './VimeoCover';
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
@@ -77,25 +78,11 @@ function getSakaAge(date = new Date()) {
   return date.getFullYear() - SAKA_BIRTHDAY.year - (hasHadBirthdayThisYear ? 0 : 1)
 }
 
-function VideoBg({ src }: { src: string }) {
+function VideoBg({ id }: { id: string }) {
   return (
-    <video
-      src={src}
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="auto"
-      style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 'max(100%, calc(100vh * 16 / 9))',
-        height: 'max(100%, calc(100vw * 9 / 16))',
-        objectFit: 'cover',
-        pointerEvents: 'none',
-      }}
+    <VimeoCover
+      id={id}
+      className="absolute inset-0 w-full h-full"
     />
   )
 }
@@ -297,12 +284,13 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
     setSakaAge(getSakaAge())
   }, [])
 
-  // Slide-up over Number7 — same pattern as Number7 slides over ProfessionalDebut
+  // Slide-up over Number7
   const { scrollYProgress: slideProgress } = useScroll({
     target: slideContainerRef,
     offset: ['start end', 'start start'],
   })
   const panelSlideY = useTransform(slideProgress, [0, 1], ['100%', '0%'])
+
 
   // Scroll-driven horizontal story for England overlay
   // Chapter centres: p=0 (ch1), p=0.333 (ch2), p=0.667 (ch3), p=1.0 (ch4)
@@ -521,11 +509,11 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
       {mounted && !isTouch && createPortal(cursorEl, document.body)}
 
       {/* ── Split-panel ───────────────────────────────────────────── */}
-      {/* marginTop: -100vh overlaps the last 100vh of Number7 so the slide starts while it's still visible */}
+      {/* marginTop: -100vh overlaps Number7; height 200vh = 100vh overlap + 100vh visible */}
       <div
         ref={slideContainerRef}
-        id="club-country"
-        style={{ height: '250vh', position: 'relative', zIndex: 61, marginTop: '-100vh' }}
+        id="club-and-country"
+        style={{ height: '200vh', position: 'relative', zIndex: 61, marginTop: '-100vh' }}
       >
         <motion.section
           ref={sectionRef}
@@ -549,7 +537,7 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                 <Image src="/Saka Arsenal.png" alt="Saka Arsenal" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized priority />
               </div>
               <div className="absolute inset-0 overflow-hidden" style={{ opacity: active === 'club' ? 1 : 0, transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
-                <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431370/The_Gunner_Cover_zowdp8.mp4" />
+                <VideoBg id="1198204904" />
               </div>
               <div className="absolute inset-0 pointer-events-none" style={{ background: active === 'club' ? 'linear-gradient(to right,rgba(9,9,11,0.85) 0%,rgba(9,9,11,0.2) 55%,rgba(9,9,11,0.05) 100%)' : 'transparent', transition: `background ${PANEL_DUR} ${PANEL_EASING}` }} />
 
@@ -581,7 +569,7 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
                 <Image src="/Saka England National.png" alt="Saka England" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} unoptimized />
               </div>
               <div className="absolute inset-0 overflow-hidden" style={{ opacity: active === 'country' ? 1 : 0, transition: `opacity ${PANEL_DUR} ${PANEL_EASING}` }}>
-                <VideoBg src="https://res.cloudinary.com/dinsvbrfd/video/upload/v1778431397/The_Lions_Cover_mbuqbm.mp4" />
+                <VideoBg id="1198203825" />
               </div>
               <div className="absolute inset-0 pointer-events-none" style={{ background: active === 'country' ? 'linear-gradient(to left,rgba(9,9,11,0.85) 0%,rgba(9,9,11,0.2) 55%,rgba(9,9,11,0.05) 100%)' : 'transparent', transition: `background ${PANEL_DUR} ${PANEL_EASING}` }} />
 

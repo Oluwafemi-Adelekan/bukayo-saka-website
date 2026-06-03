@@ -20,17 +20,17 @@ type MatchInfo = {
 
 const INITIAL: MatchInfo = {
   state: 'upcoming',
-  homeTeam: 'Arsenal',
-  awayTeam: 'PSG',
-  homeTeamCrest: 'https://media.api-sports.io/football/teams/42.png',
-  awayTeamCrest: 'https://media.api-sports.io/football/teams/85.png',
+  homeTeam: 'England',
+  awayTeam: 'Croatia',
+  homeTeamCrest: 'https://flagcdn.com/gb-eng.svg',
+  awayTeamCrest: 'https://flagcdn.com/hr.svg',
   homeScore: null,
   awayScore: null,
   minute: null,
-  date: '2026-05-30',
+  date: '2026-06-17',
   time: '20:00',
-  competition: 'UEFA Champions League',
-  venue: 'Puskás Aréna, Budapest',
+  competition: 'FIFA World Cup',
+  venue: 'AT&T Stadium',
 }
 
 // ─── Shared typography — mirrors the Tile component in overlay stats cards ──
@@ -96,11 +96,13 @@ function formatDate(date: string, time: string) {
 
 function competitionShort(name: string) {
   const lc = name.toLowerCase()
+  if (lc.includes('world cup')) return 'World Cup'
   if (lc.includes('champions')) return 'UCL'
   if (lc.includes('premier')) return 'PL'
   if (lc.includes('fa cup')) return 'FA Cup'
   if (lc.includes('league cup') || lc.includes('carabao')) return 'EFL Cup'
   if (lc.includes('community')) return 'Com. Shield'
+  if (lc.includes('international')) return 'Intl'
   return name.split(' ').map(w => w[0]).join('').slice(0, 4).toUpperCase()
 }
 
@@ -158,7 +160,7 @@ export default function NextMatch() {
               transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
               style={{
                 width: 6, height: 6, borderRadius: '50%',
-                background: '#EF0107', flexShrink: 0, display: 'inline-block',
+                background: '#fff', flexShrink: 0, display: 'inline-block',
               }}
             />
             <span style={LABEL}>

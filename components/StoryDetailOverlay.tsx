@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { VimeoCover } from './VimeoCover'
 import GrainOverlay from './GrainOverlay'
 
 type TextPanel = {
@@ -223,16 +224,7 @@ function DesktopPanel({ panel }: { panel: TextPanel | ImagePanel | VideoPanel })
               style={{ border: 0, display: 'block' }}
             />
           ) : panel.src ? (
-            <video
-              src={panel.src}
-              poster={panel.poster}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              className="h-full w-full object-cover"
-            />
+            <VimeoCover id={panel.src} className="absolute inset-0 w-full h-full" />
           ) : (
             <div
               className="flex h-full w-full items-center justify-center"
@@ -604,16 +596,7 @@ export default function StoryDetailOverlay({ detail }: { detail: StoryDetail }) 
                       style={{ border: 0, display: 'block' }}
                     />
                   ) : panel.src ? (
-                    <video
-                      src={panel.src}
-                      poster={panel.poster}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      className="h-full w-full object-cover"
-                    />
+                    <VimeoCover id={panel.src} className="absolute inset-0 w-full h-full" />
                   ) : (
                     <div
                       className="flex h-full w-full items-center justify-center"

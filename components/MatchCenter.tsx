@@ -254,7 +254,7 @@ export default function MatchCenter() {
           Arsenal and the England national team.
         </p>
 
-        {/* ── Arsenal FC label ── */}
+        {/* ── England · Three Lions label ── */}
         <div
           style={{
             display: 'flex',
@@ -267,7 +267,7 @@ export default function MatchCenter() {
             style={{
               width: 6, height: 6,
               borderRadius: '50%',
-              background: '#EF0107',
+              background: '#fff',
               flexShrink: 0,
             }}
           />
@@ -281,7 +281,7 @@ export default function MatchCenter() {
               fontWeight: 600,
             }}
           >
-            Arsenal FC
+            England · Three Lions
           </span>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
         </div>
