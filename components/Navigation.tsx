@@ -63,9 +63,15 @@ export default function Navigation() {
       : 0
     const top = el.getBoundingClientRect().top + window.scrollY + offset
     setTimeout(() => {
+      window.dispatchEvent(new Event('nav:start'))
       const lenis = getLenis()
-      if (lenis) lenis.scrollTo(top, {})
-      else window.scrollTo({ top, behavior: 'smooth' })
+      if (lenis) {
+        lenis.scrollTo(top, { duration: 1.2 })
+        setTimeout(() => window.dispatchEvent(new Event('nav:end')), 1300)
+      } else {
+        window.scrollTo({ top, behavior: 'smooth' })
+        setTimeout(() => window.dispatchEvent(new Event('nav:end')), 1300)
+      }
     }, 50)
   }, [])
 

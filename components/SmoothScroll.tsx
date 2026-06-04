@@ -31,65 +31,50 @@ export default function SmoothScroll() {
     window.addEventListener('lenis:stop',  onStop)
     window.addEventListener('lenis:start', onStart)
 
-    // Programmatic Scroll Snapping Logic
     let scrollTimeout: NodeJS.Timeout
     let isSnapping = false
-    let isInteracting = false
 
-    const handleInteractStart = () => { isInteracting = true }
-    const handleInteractEnd = () => {
-      isInteracting = false
-      checkSnap()
-    }
-
-    window.addEventListener('mousedown', handleInteractStart)
-    window.addEventListener('mouseup', handleInteractEnd)
-    window.addEventListener('touchstart', handleInteractStart)
-    window.addEventListener('touchend', handleInteractEnd)
-
-    const checkSnap = () => {
-      if (isSnapping || isInteracting) return
-      
-      const sections = ['#hero', '#story', '#club-and-country', '#foundation', '#commercial', '#fixtures']
-      const wh = window.innerHeight
-      
-      for (const sel of sections) {
-        const el = document.querySelector(sel) as HTMLElement
-        if (!el) continue
-        
-        const rect = el.getBoundingClientRect()
-        const elementTopAbsolute = window.scrollY + rect.top
-        
-        // Transition zone where section boundary crosses viewport
-        const zoneStart = elementTopAbsolute - wh
-        const zoneEnd = elementTopAbsolute
-        
-        // If current scroll is within the boundary transition zone (50% visibility)
-        if (window.scrollY > zoneStart && window.scrollY < zoneEnd) {
-          const distanceToStart = window.scrollY - zoneStart
-          const distanceToEnd = zoneEnd - window.scrollY
-          
-          if (distanceToEnd < distanceToStart && distanceToEnd > 5) {
-            // Snap forward to the section's top
-            isSnapping = true
-            lenis.scrollTo(zoneEnd, { duration: 0.45, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) })
-            setTimeout(() => { isSnapping = false }, 550)
-            break
-          } else if (distanceToStart < distanceToEnd && distanceToStart > 5) {
-            // Snap back off the screen
-            isSnapping = true
-            lenis.scrollTo(zoneStart, { duration: 0.45, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) })
-            setTimeout(() => { isSnapping = false }, 550)
-            break
-          }
-        }
+    const cancelSnap = () => {
+      if (isSnapping) {
+        isSnapping = false
       }
     }
+    window.addEventListener('wheel', cancelSnap, { passive: true })
+    window.addEventListener('touchstart', cancelSnap, { passive: true })
 
     lenis.on('scroll', () => {
-      if (isSnapping || isInteracting) return
+      if (isSnapping) return
+
       clearTimeout(scrollTimeout)
-      scrollTimeout = setTimeout(checkSnap, 50)
+      
+      scrollTimeout = setTimeout(() => {
+        const ids = ['hero', 'story', 'club-and-country', 'foundation', 'commercial', 'fixtures']
+        const sections = ids.map(id => document.getElementById(id)).filter(Boolean)
+        if (!sections.length) return
+
+        let closest = sections[0]
+        let minDiff = Infinity
+
+        for (const sec of sections) {
+          const rect = sec!.getBoundingClientRect()
+          const dist = Math.abs(rect.top)
+          if (dist < minDiff) {
+            minDiff = dist
+            closest = sec
+          }
+        }
+
+        if (minDiff > 10) {
+          isSnapping = true
+          lenis.scrollTo(closest!, {
+            duration: 0.8,
+            easing: (t: number) => t, // Linear animation as requested
+            onComplete: () => {
+              isSnapping = false
+            }
+          })
+        }
+      }, 150)
     })
 
     function raf(time: number) {
@@ -104,10 +89,8 @@ export default function SmoothScroll() {
       delete (window as unknown as Record<string, unknown>).__lenis
       window.removeEventListener('lenis:stop',  onStop)
       window.removeEventListener('lenis:start', onStart)
-      window.removeEventListener('mousedown', handleInteractStart)
-      window.removeEventListener('mouseup', handleInteractEnd)
-      window.removeEventListener('touchstart', handleInteractStart)
-      window.removeEventListener('touchend', handleInteractEnd)
+      window.removeEventListener('wheel', cancelSnap)
+      window.removeEventListener('touchstart', cancelSnap)
       clearTimeout(scrollTimeout)
     }
   }, [])
