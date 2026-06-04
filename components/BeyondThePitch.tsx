@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
+import { motion, AnimatePresence, useTransform, useMotionValue, useInView, animate } from 'framer-motion'
 import Image from 'next/image'
 import { createPortal } from 'react-dom'
 import GrainOverlay from './GrainOverlay'
@@ -277,12 +277,60 @@ function BeyondOverlay({ onClose, slides }: { onClose: () => void; slides: Slide
  )
 }
 
+// Card-style reveal spring — matches the Story / Merch card peel timing.
+const CARD_SPRING = { type: 'spring' as const, stiffness: 55, damping: 17, mass: 1.3 }
+
+// Cover image revealed with a RIGHT-to-LEFT clip-path wipe. No painted panel,
+// so the un-revealed area just shows the section background (no black block),
+// and the motion uses the same spring as the Story / Merch cards. Fires only
+// once the section is fully in view (driven by the `active` prop).
+function WipeImage({ active }: { active: boolean }) {
+ const progress = useMotionValue(0)
+ // inset(top right bottom left): clip from the LEFT so the image reveals
+ // starting at the right edge and sweeps leftward.
+ const clip = useTransform(progress, (v) => `inset(0 0 0 ${(1 - v) * 100}%)`)
+
+ useEffect(() => {
+ const controls = animate(
+ progress,
+ active ? 1 : 0,
+ active ? CARD_SPRING : { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+ )
+ return () => controls.stop()
+ }, [active, progress])
+
+ return (
+ <div style={{ position: 'relative' }}>
+ <motion.div style={{ clipPath: clip, WebkitClipPath: clip }}>
+ <Image
+ src="/Beyond the pitch cover.png"
+ alt="Beyond the Pitch"
+ width={1200}
+ height={900}
+ sizes="(max-width: 767px) 92vw, 50vw"
+ style={{
+ maxHeight: 'min(58vh, calc(100vh - 200px))',
+ width: 'auto',
+ height: 'auto',
+ maxWidth: '100%',
+ display: 'block',
+ }}
+ />
+ </motion.div>
+ </div>
+ )
+}
+
 export default function BeyondThePitch({ slides: sanitySlides }: { slides?: SanityBTPSlide[] }) {
  const slides = resolveSanitySlides(sanitySlides)
  const [showOverlay, setShowOverlay] = useState(false)
  const [mounted, setMounted] = useState(false)
 
- // Slide-up transform removed to simplify scroll
+ // Everything in this section animates once it is (nearly) fully in view,
+ // not the moment it first peeks over the fold.
+ const sectionRef = useRef<HTMLElement>(null)
+ const inView = useInView(sectionRef, { amount: 0.6 })
+ const EASE = [0.16, 1, 0.3, 1] as const
 
  useEffect(() => { setMounted(true) }, [])
 
@@ -302,6 +350,7 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
  )}
 
  <section
+ ref={sectionRef}
  id="foundation"
  className="relative overflow-hidden "
  style={{ height: '100vh', background: '#09090b', zIndex: 62 }}
@@ -323,9 +372,8 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
  >
  <motion.h2
  initial={{ opacity: 0, y: 28 }}
- whileInView={{ opacity: 1, y: 0 }}
- viewport={{ once: false, amount: 0.4 }}
- transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+ animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+ transition={{ duration: 0.8, ease: EASE }}
  style={{ margin: 0, padding: 0, lineHeight: 0.96 }}
  >
  <span style={{ display: 'block', fontFamily: 'Kegilka, serif', fontSize: 'clamp(2.2rem, 5vw, 5rem)', lineHeight: 0.88, fontWeight: 400, color: '#ffffff' }}>BEYOND</span>
@@ -334,9 +382,8 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
 
  <motion.p
  initial={{ opacity: 0, y: 18 }}
- whileInView={{ opacity: 1, y: 0 }}
- viewport={{ once: true, margin: "-10%" }}
- transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.12 }}
+ animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+ transition={{ duration: 0.7, ease: EASE, delay: 0.12 }}
  style={{
  fontFamily: 'Mona Sans, sans-serif',
  fontSize: 'var(--body-text-size)',
@@ -352,9 +399,8 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
 
  <motion.div
  initial={{ opacity: 0, y: 14 }}
- whileInView={{ opacity: 1, y: 0 }}
- viewport={{ once: true, margin: "-10%" }}
- transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+ animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
+ transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
  >
  <FillButton label="Read More" onClick={() => setShowOverlay(true)} />
  </motion.div>
@@ -362,41 +408,7 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
 
  {/* ── Right column: cover image ── */}
  <div className="flex-1 flex items-end justify-end pl-4 pr-4 pb-4 md:pl-0 md:pr-6 md:pb-6 min-h-0 overflow-hidden">
- <motion.div
- initial={{ opacity: 0 }}
- whileInView={{ opacity: 1 }}
- viewport={{ once: false, amount: 0.4 }}
- transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
- style={{ position: 'relative' }}
- >
- <motion.div
- initial={{ scaleX: 1 }}
- whileInView={{ scaleX: 0 }}
- viewport={{ once: false, amount: 0.4 }}
- transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
- style={{
- position: 'absolute',
- inset: 0,
- background: '#09090b',
- transformOrigin: 'left',
- zIndex: 10,
- }}
- />
- <Image
- src="/Beyond the pitch cover.png"
- alt="Beyond the Pitch"
- width={1200}
- height={900}
- sizes="(max-width: 767px) 92vw, 50vw"
- style={{
- maxHeight: 'min(58vh, calc(100vh - 200px))',
- width: 'auto',
- height: 'auto',
- maxWidth: '100%',
- display: 'block',
- }}
- />
- </motion.div>
+ <WipeImage active={inView} />
  </div>
 
  </div>

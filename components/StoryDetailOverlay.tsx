@@ -107,7 +107,10 @@ function TitleLine({ text, index }: { text: string; index: number }) {
       style={{
         display: 'block',
         fontFamily: index === 0 ? 'Kegilka, serif' : 'Mona Sans, sans-serif',
+        fontSize: 'clamp(2.2rem, 5vw, 5rem)',
+        lineHeight: 0.88,
         fontWeight: index === 0 ? 400 : 300,
+        color: '#ffffff',
       }}
     >
       {Array.from(text).map((letter, letterIndex) => (
@@ -146,17 +149,17 @@ function DesktopPanel({ panel }: { panel: TextPanel | ImagePanel | VideoPanel })
       >
         {panel.heading ? (
           <h2
-            style={{
-              fontFamily: 'Kegilka, serif',
-              fontSize: 'clamp(2.4rem, 4.8vw, 5.2rem)',
-              lineHeight: 0.92,
-              fontWeight: 400,
-              color: '#ffffff',
-              margin: 0,
-            }}
-          >
-            {panel.heading}
-          </h2>
+                    style={{
+                      fontFamily: 'Kegilka, serif',
+                      fontSize: 'clamp(2.2rem, 5vw, 5rem)',
+                      lineHeight: 0.88,
+                      fontWeight: 400,
+                      color: '#ffffff',
+                      margin: 0,
+                    }}
+                  >
+                    {panel.heading}
+                  </h2>
         ) : null}
         <p
           style={{
@@ -351,9 +354,13 @@ export default function StoryDetailOverlay({ detail }: { detail: StoryDetail }) 
                     overlay.style.pointerEvents = 'auto';
                     overlay.style.opacity = '0';
                     overlay.style.transform = 'translate3d(0,28px,0)';
+                    // Reset BOTH desktop + mobile scroll containers to the top so
+                    // reopening an overlay always starts from the beginning.
+                    overlay.querySelectorAll('[data-overlay-scroll]').forEach((sc) => {
+                      sc.scrollTop = 0;
+                      sc.__targetTop = 0;
+                    });
                     measure(overlay);
-                    const scroll = overlay.querySelector('[data-story-overlay-scroll-desktop]');
-                    if (scroll) scroll.scrollTo({ top: 0, behavior: 'auto' });
                     overlay.querySelectorAll('[data-story-overlay-panel]').forEach((panel) => {
                       panel.dataset.inView = 'false';
                     });
@@ -385,13 +392,14 @@ export default function StoryDetailOverlay({ detail }: { detail: StoryDetail }) 
                   if (!scroll) return;
                   let frame = null;
                   let smoothFrame = null;
-                  let targetTop = scroll.scrollTop;
+                  // Smooth-scroll target lives on the element so sync() can reset it on open.
+                  scroll.__targetTop = scroll.scrollTop;
                   const maxScroll = () => Math.max(0, scroll.scrollHeight - scroll.clientHeight);
                   const smoothScroll = () => {
                     const current = scroll.scrollTop;
-                    const next = current + (targetTop - current) * 0.105;
-                    if (Math.abs(targetTop - current) < 0.5) {
-                      scroll.scrollTop = targetTop;
+                    const next = current + (scroll.__targetTop - current) * 0.105;
+                    if (Math.abs(scroll.__targetTop - current) < 0.5) {
+                      scroll.scrollTop = scroll.__targetTop;
                       smoothFrame = null;
                       update(overlay);
                       return;
@@ -402,7 +410,7 @@ export default function StoryDetailOverlay({ detail }: { detail: StoryDetail }) 
                   };
 
                   scroll.addEventListener('scroll', () => {
-                    if (!smoothFrame) targetTop = scroll.scrollTop;
+                    if (!smoothFrame) scroll.__targetTop = scroll.scrollTop;
                     if (frame) return;
                     frame = window.requestAnimationFrame(() => {
                       frame = null;
@@ -415,7 +423,7 @@ export default function StoryDetailOverlay({ detail }: { detail: StoryDetail }) 
                     event.preventDefault();
                     const isHorizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
                     const delta = isHorizontal ? event.deltaX : event.deltaY;
-                    targetTop = Math.max(0, Math.min(maxScroll(), targetTop + delta));
+                    scroll.__targetTop = Math.max(0, Math.min(maxScroll(), scroll.__targetTop + delta));
                     if (!smoothFrame) smoothFrame = window.requestAnimationFrame(smoothScroll);
                   }, { passive: false });
                 });
@@ -444,16 +452,7 @@ export default function StoryDetailOverlay({ detail }: { detail: StoryDetail }) 
         <div data-story-overlay-spacer style={{ height: '420vh', minHeight: '360vh' }}>
           <div className="sticky top-0 h-[100svh] overflow-hidden">
             <div className="story-overlay-hero-content absolute inset-y-0 left-0 z-10 flex w-[50vw] flex-col justify-between px-6 pb-10 pt-6">
-              <h1
-                className="story-overlay-heading"
-                style={{
-                  fontSize: 'clamp(3.7rem, 6.6vw, 7.2rem)',
-                  lineHeight: 0.94,
-                  fontWeight: 400,
-                  color: '#ffffff',
-                  margin: 0,
-                }}
-              >
+              <h1 className="story-overlay-heading" style={{ margin: 0, padding: 0, lineHeight: 0.96 }}>
                 {detail.title.map((line, index) => <TitleLine key={line} text={line} index={index} />)}
               </h1>
 
@@ -501,23 +500,17 @@ export default function StoryDetailOverlay({ detail }: { detail: StoryDetail }) 
 
       <div data-overlay-scroll className="absolute inset-0 overflow-y-auto md:hidden">
         <section className="min-h-[100svh] px-4 pb-4 pt-4">
-          <h1
-            style={{
-              fontSize: 'clamp(2.8rem, 12vw, 4.5rem)',
-              lineHeight: 0.94,
-              fontWeight: 400,
-              color: '#ffffff',
-              margin: '0 0 28px',
-              paddingRight: 56,
-            }}
-          >
+          <h1 style={{ margin: '0 0 28px', padding: 0, paddingRight: 56, lineHeight: 0.96 }}>
             {detail.title.map((line, index) => (
               <span
                 key={line}
                 style={{
                   display: 'block',
                   fontFamily: index === 0 ? 'Kegilka, serif' : 'Mona Sans, sans-serif',
+                  fontSize: 'clamp(2.2rem, 5vw, 5rem)',
+                  lineHeight: 0.88,
                   fontWeight: index === 0 ? 400 : 300,
+                  color: '#ffffff',
                 }}
               >
                 {line}
@@ -557,8 +550,8 @@ export default function StoryDetailOverlay({ detail }: { detail: StoryDetail }) 
                   <h2
                     style={{
                       fontFamily: 'Kegilka, serif',
-                      fontSize: 'clamp(1.8rem, 6vw, 2.8rem)',
-                      lineHeight: 0.92,
+                      fontSize: 'clamp(2.2rem, 5vw, 5rem)',
+                      lineHeight: 0.88,
                       fontWeight: 400,
                       color: '#ffffff',
                       margin: 0,

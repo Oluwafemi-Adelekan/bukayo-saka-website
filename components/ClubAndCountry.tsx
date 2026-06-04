@@ -4,7 +4,7 @@ import { VimeoCover } from './VimeoCover';
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll, animate } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useScroll, useInView, animate } from 'framer-motion'
 import FillButton from './FillButton'
 import SignatureStroke from './SignatureStroke'
 import TrophyCabinet from './TrophyCabinet'
@@ -16,6 +16,7 @@ type Side = 'club' | 'country'
 
 const PANEL_EASING = 'cubic-bezier(0.87, 0, 0.13, 1)'
 const PANEL_DUR = '900ms'
+const EASE = [0.16, 1, 0.3, 1] as const
 // Overlay animation duration (ms) — content fades in AFTER this completes
 const OVERLAY_DUR = 640
 
@@ -277,6 +278,9 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
  const baseTrackX = useRef(0)
  const snapAnimRef = useRef<{ stop: () => void } | null>(null)
  const sectionRef = useRef<HTMLDivElement>(null)
+ // Crest + label + title animate in once the split panel is fully in view,
+ // and re-animate the active side whenever the user hovers across.
+ const inView = useInView(sectionRef, { amount: 0.6 })
  const engScrollContainerRef = useRef<HTMLDivElement>(null)
  const slideContainerRef = useRef<HTMLDivElement>(null)
 
@@ -531,11 +535,16 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
  </div>
  <div className="absolute inset-0 pointer-events-none" style={{ background: active === 'club' ? 'linear-gradient(to right,rgba(9,9,11,0.85) 0%,rgba(9,9,11,0.2) 55%,rgba(9,9,11,0.05) 100%)' : 'transparent', transition: `background ${PANEL_DUR} ${PANEL_EASING}` }} />
 
- <div className="absolute inset-0 flex flex-col justify-end p-4 pb-16 md:p-6 pointer-events-none" style={{ opacity: active === 'club' ? 1 : 0, transition: 'opacity 350ms ease' }}>
+ <motion.div
+ className="absolute inset-0 flex flex-col justify-end p-4 pb-16 md:p-6 pointer-events-none"
+ initial={{ opacity: 0, y: 24 }}
+ animate={active === 'club' && inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+ transition={{ duration: 0.6, ease: EASE }}
+ >
  <Image src={ARSENAL_SVG} alt="Arsenal" width={40} height={47} className="mb-4" unoptimized />
  <p className="text-white/50 text-xs tracking-[0.4em] uppercase mb-3 font-normal" style={{ fontFamily: 'Mona Sans, sans-serif' }}>Arsenal FC · Premier League</p>
  <h2 className="text-white text-xl md:text-2xl tracking-widest uppercase leading-none" style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}>THE GUNNER</h2>
- </div>
+ </motion.div>
 
  {/* Vertical "Arsenal" label — pinned to LEFT edge so it doesn't drift on resize */}
  <div className="absolute pointer-events-none z-20" style={{ left: 24, top: '50%', transform: 'translateY(-50%)', opacity: active === 'club' ? 0 : 1, transition: 'opacity 350ms ease' }}>
@@ -563,11 +572,16 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
  </div>
  <div className="absolute inset-0 pointer-events-none" style={{ background: active === 'country' ? 'linear-gradient(to left,rgba(9,9,11,0.85) 0%,rgba(9,9,11,0.2) 55%,rgba(9,9,11,0.05) 100%)' : 'transparent', transition: `background ${PANEL_DUR} ${PANEL_EASING}` }} />
 
- <div className="absolute inset-0 flex flex-col justify-end items-end p-4 pb-16 md:p-6 pointer-events-none" style={{ opacity: active === 'country' ? 1 : 0, transition: 'opacity 350ms ease' }}>
+ <motion.div
+ className="absolute inset-0 flex flex-col justify-end items-end p-4 pb-16 md:p-6 pointer-events-none"
+ initial={{ opacity: 0, y: 24 }}
+ animate={active === 'country' && inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+ transition={{ duration: 0.6, ease: EASE }}
+ >
  <Image src={ENGLAND_SVG} alt="England" width={36} height={42} className="mb-4" unoptimized />
  <p className="text-white/60 text-xs tracking-[0.4em] uppercase mb-3 font-normal text-right" style={{ fontFamily: 'Mona Sans, sans-serif' }}>England · Three Lions</p>
  <h2 className="text-white text-xl md:text-2xl tracking-widest uppercase leading-none text-right" style={{ fontFamily: 'Kegilka, serif', fontWeight: 400 }}>THE LION</h2>
- </div>
+ </motion.div>
 
  {/* Vertical "England" label — pinned to RIGHT edge */}
  <div className="absolute pointer-events-none z-20" style={{ right: 24, top: '50%', transform: 'translateY(-50%)', opacity: active === 'country' ? 0 : 1, transition: 'opacity 350ms ease' }}>

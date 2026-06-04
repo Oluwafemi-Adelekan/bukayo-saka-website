@@ -1,7 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useInView } from 'framer-motion'
 import GrainOverlay from './GrainOverlay'
+
+const EASE = [0.16, 1, 0.3, 1] as const
 
 type Fixture = {
  homeTeam: string
@@ -64,13 +67,16 @@ const LABEL_STYLE: React.CSSProperties = {
  textAlign: 'center',
 }
 
-function FixtureCard({ fixture, index }: { fixture: Fixture; index: number }) {
+function FixtureCard({ fixture, index, inView }: { fixture: Fixture; index: number; inView: boolean }) {
  const { weekday, day, month } = formatDate(fixture.date)
  const competition = normalizeCompetition(fixture.competition)
  const hasAltBg = index % 2 === 0
 
  return (
- <div
+ <motion.div
+ initial={{ opacity: 0, y: 24 }}
+ animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+ transition={{ duration: 0.55, ease: EASE, delay: 0.15 + index * 0.08 }}
  style={{
  background: hasAltBg ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
  border: '1px solid rgba(255,255,255,0.08)',
@@ -188,12 +194,14 @@ function FixtureCard({ fixture, index }: { fixture: Fixture; index: number }) {
  {competition}
  </span>
  </div>
- </div>
+ </motion.div>
  )
 }
 
 export default function MatchCenter() {
  const [fixtures, setFixtures] = useState<Fixture[]>([])
+ const sectionRef = useRef<HTMLElement>(null)
+ const inView = useInView(sectionRef, { amount: 0.3 })
 
  useEffect(() => {
  fetch('/api/fixtures')
@@ -204,6 +212,7 @@ export default function MatchCenter() {
 
  return (
  <section
+ ref={sectionRef}
  id="fixtures"
  className=""
  style={{ background: '#09090b', position: 'relative' }}
@@ -213,7 +222,12 @@ export default function MatchCenter() {
  <div className="px-4 pb-4 md:px-6" style={{ paddingTop: 88 }}>
 
  {/* ── Heading ── */}
- <div style={{ marginBottom: 14 }}>
+ <motion.div
+ initial={{ opacity: 0, y: 28 }}
+ animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+ transition={{ duration: 0.8, ease: EASE }}
+ style={{ marginBottom: 14 }}
+ >
  <span
  style={{
  display: 'block',
@@ -238,10 +252,13 @@ export default function MatchCenter() {
  >
  CENTRE
  </span>
- </div>
+ </motion.div>
 
  {/* ── Subtitle ── */}
- <p
+ <motion.p
+ initial={{ opacity: 0, y: 18 }}
+ animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+ transition={{ duration: 0.7, ease: EASE, delay: 0.12 }}
  style={{
  fontFamily: 'Mona Sans, sans-serif',
  fontSize: 'var(--body-text-size)',
@@ -253,10 +270,13 @@ export default function MatchCenter() {
  >
  Stay connected with all the action: upcoming fixtures and events for
  Arsenal and the England national team.
- </p>
+ </motion.p>
 
  {/* ── England · Three Lions label ── */}
- <div
+ <motion.div
+ initial={{ opacity: 0, y: 14 }}
+ animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
+ transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
  style={{
  display: 'flex',
  alignItems: 'center',
@@ -285,7 +305,7 @@ export default function MatchCenter() {
  England · Three Lions
  </span>
  <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
- </div>
+ </motion.div>
 
  {/* ── 4-column card grid ── */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -294,6 +314,7 @@ export default function MatchCenter() {
  key={f.date + f.homeTeam + f.awayTeam}
  fixture={f}
  index={i}
+ inView={inView}
  />
  ))}
  </div>

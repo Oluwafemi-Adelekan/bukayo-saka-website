@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, animate, type AnimationPlaybackControls } from 'framer-motion'
+import { motion, AnimatePresence, useInView, useTransform, useMotionValue, animate, type AnimationPlaybackControls } from 'framer-motion'
 import Image from 'next/image'
 import GrainOverlay from './GrainOverlay'
 import FillButton from './FillButton'
@@ -90,6 +90,10 @@ function BrandContent({ brand }: { brand: typeof brands[0] }) {
 export default function Commercial() {
  const slideRef = useRef<HTMLDivElement>(null)
  const carouselRef = useRef<HTMLDivElement>(null)
+ // Entrance animations fire once the section is (nearly) fully in view.
+ const sectionRef = useRef<HTMLElement>(null)
+ const sectionInView = useInView(sectionRef, { amount: 0.6 })
+ const EASE = [0.16, 1, 0.3, 1] as const
  const [activeIdx, setActiveIdx] = useState(0)
  // dotIdx is updated SYNCHRONOUSLY at the moment a swipe / tap commits, while
  // activeIdx waits for the animation to finish. Dots reflect the user's intent
@@ -229,6 +233,7 @@ export default function Commercial() {
 
  return (
  <section
+ ref={sectionRef}
  id="commercial"
  className="relative overflow-hidden "
  style={{ height: '100vh', background: '#09090b', zIndex: 63 }}
@@ -246,9 +251,8 @@ export default function Commercial() {
  {/* Heading — never re-renders between brands, stays put */}
  <motion.h2
  initial={{ opacity: 0, y: 28 }}
- whileInView={{ opacity: 1, y: 0 }}
- viewport={{ once: false, amount: 0.4 }}
- transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+ animate={sectionInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+ transition={{ duration: 0.8, ease: EASE }}
  style={{ margin: 0, padding: 0, lineHeight: 0.96, flexShrink: 0 }}
  >
  <span style={{ display: 'block', fontFamily: 'Kegilka, serif', fontSize: 'clamp(2.2rem, 8vw, 3rem)', lineHeight: 0.88, fontWeight: 400, color: '#ffffff' }}>MERCH</span>
@@ -375,16 +379,20 @@ export default function Commercial() {
  >
  <motion.h2
  initial={{ opacity: 0, y: 28 }}
- whileInView={{ opacity: 1, y: 0 }}
- viewport={{ once: false, amount: 0.4 }}
- transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+ animate={sectionInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+ transition={{ duration: 0.8, ease: EASE }}
  style={{ margin: 0, padding: 0, marginBottom: 40, flexShrink: 0, lineHeight: 0.96 }}
  >
  <span style={{ display: 'block', fontFamily: 'Kegilka, serif', fontSize: 'clamp(2.2rem, 5vw, 5rem)', lineHeight: 0.88, fontWeight: 400, color: '#ffffff' }}>MERCH</span>
  <span style={{ display: 'block', fontFamily: 'Mona Sans, sans-serif', fontSize: 'clamp(2.2rem, 5vw, 5rem)', lineHeight: 0.88, fontWeight: 300, color: '#ffffff' }}>&amp; BRANDS</span>
  </motion.h2>
 
- <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
+ <motion.div
+ initial={{ opacity: 0, y: 18 }}
+ animate={sectionInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+ transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
+ style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}
+ >
  <AnimatePresence mode="wait">
  <motion.div
  key={activeIdx}
@@ -407,7 +415,7 @@ export default function Commercial() {
  ))}
  </motion.div>
  </AnimatePresence>
- </div>
+ </motion.div>
  </div>
 
  {/* ── Right column ── */}
@@ -420,13 +428,16 @@ export default function Commercial() {
  const isActive = i === activeIdx
 
  return (
- <div
+ <motion.div
  key={brand.name}
  className="flex-1 md:py-0 md:pl-5 md:pb-5"
+ initial={{ opacity: 0, y: 22 }}
+ animate={sectionInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 }}
+ transition={{ duration: 0.6, ease: EASE, delay: 0.15 + i * 0.1 }}
  style={{
  position: 'relative',
  overflow: 'hidden',
- borderTop: '1px solid rgba(255,255,255,0.1)',
+ borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.1)',
  display: 'flex',
  flexDirection: 'column',
  justifyContent: 'flex-end',
@@ -482,7 +493,7 @@ export default function Commercial() {
  onClick={(e) => e.stopPropagation()}
  />
  </div>
- </div>
+ </motion.div>
  )
  })}
  </div>

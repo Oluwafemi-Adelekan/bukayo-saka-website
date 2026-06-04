@@ -6,10 +6,13 @@ import Image from 'next/image'
 import {
  animate,
  motion,
+ useInView,
  useMotionValue,
  useTransform,
  type AnimationPlaybackControls,
 } from 'framer-motion'
+
+const EASE = [0.16, 1, 0.3, 1] as const
 import GrainOverlay from './GrainOverlay'
 import StoryDetailOverlay, { type StoryDetail } from './StoryDetailOverlay'
 import FillButton from './FillButton'
@@ -454,6 +457,9 @@ export default function NewStory() {
  const nextIdx = (activeIdx + 1) % storyItems.length
  const prevIdx = (activeIdx - 1 + storyItems.length) % storyItems.length
  const trackX = useMotionValue(0)
+ // Entrance animations (heading + cards) fire once the section is fully in view,
+ // consistent with Beyond the Pitch / Merch & Brands / Match Centre.
+ const storyInView = useInView(sectionRef, { amount: 0.6 })
 
  const getCarouselWidth = useCallback(() => {
  if (typeof window === 'undefined') return 1
@@ -608,9 +614,13 @@ export default function NewStory() {
  <div
  className="new-story-reveal-heading"
  >
- <h2 style={{ margin: 0, padding: 0, lineHeight: 0.96 }}>
+ <motion.h2
+ initial={{ opacity: 0, y: 28 }}
+ animate={storyInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+ transition={{ duration: 0.8, ease: EASE }}
+ style={{ margin: 0, padding: 0, lineHeight: 0.96 }}
+ >
  <span
- className="new-story-reveal-line new-story-reveal-line-0"
  style={{
  display: 'block',
  fontFamily: 'Kegilka, serif',
@@ -623,7 +633,6 @@ export default function NewStory() {
  THE
  </span>
  <span
- className="new-story-reveal-line new-story-reveal-line-1"
  style={{
  display: 'block',
  fontFamily: 'Mona Sans, sans-serif',
@@ -635,10 +644,12 @@ export default function NewStory() {
  >
  STORY
  </span>
- </h2>
+ </motion.h2>
 
- <p
- className="new-story-reveal-line new-story-reveal-line-2"
+ <motion.p
+ initial={{ opacity: 0, y: 18 }}
+ animate={storyInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+ transition={{ duration: 0.7, ease: EASE, delay: 0.12 }}
  style={{
  fontFamily: 'Mona Sans, sans-serif',
  fontSize: 'var(--body-text-size)',
@@ -649,7 +660,7 @@ export default function NewStory() {
  }}
  >
  From Ealing streets to Hale End, from a first senior shirt to England nights, trace the moments that shaped Bukayo Saka's rise.
- </p>
+ </motion.p>
  </div>
 
  <div
@@ -739,9 +750,12 @@ export default function NewStory() {
  onPointerLeave={(e) => { if (e.pointerType === 'mouse') setIsInteracting(false) }}
  >
  {storyItems.map((item, i) => (
- <div
+ <motion.div
  key={item.title}
- className={`new-story-reveal-card new-story-reveal-card-${i} min-h-0`}
+ className="min-h-0"
+ initial={{ opacity: 0, y: 22 }}
+ animate={storyInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 }}
+ transition={{ duration: 0.6, ease: EASE, delay: 0.15 + i * 0.1 }}
  >
  <StoryCard
  item={item}
@@ -749,7 +763,7 @@ export default function NewStory() {
  onActivate={() => setActive(i)}
  detailId={storyDetails[item.id] ? item.id : undefined}
  />
- </div>
+ </motion.div>
  ))}
  </div>
  </div>
