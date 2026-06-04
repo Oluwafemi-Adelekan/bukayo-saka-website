@@ -291,11 +291,8 @@ function WipeImage({ active }: { active: boolean }) {
  const clip = useTransform(progress, (v) => `inset(0 0 0 ${(1 - v) * 100}%)`)
 
  useEffect(() => {
- const controls = animate(
- progress,
- active ? 1 : 0,
- active ? CARD_SPRING : { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
- )
+ // Same spring whether opening or closing, so the wipe-out matches the wipe-in.
+ const controls = animate(progress, active ? 1 : 0, CARD_SPRING)
  return () => controls.stop()
  }, [active, progress])
 
@@ -352,9 +349,11 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
  <section
  ref={sectionRef}
  id="foundation"
- className="relative overflow-hidden "
- style={{ height: '100vh', background: '#09090b', zIndex: 62 }}
+ className="relative "
+ style={{ height: '120vh', background: '#09090b', zIndex: 62 }}
  >
+ {/* Pinned viewport — content stays in frame through the 120vh track */}
+ <div className="sticky top-0 h-screen overflow-hidden">
  <GrainOverlay />
 
  {/*
@@ -411,6 +410,7 @@ export default function BeyondThePitch({ slides: sanitySlides }: { slides?: Sani
  <WipeImage active={inView} />
  </div>
 
+ </div>
  </div>
  </section>
  </>

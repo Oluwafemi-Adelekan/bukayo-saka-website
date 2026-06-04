@@ -588,7 +588,7 @@ export default function NewStory() {
  id="story"
  className="relative bg-[#09090b] "
  data-in-view="true"
- style={{ height: '100vh' }}
+ style={{ height: '120vh' }}
  >
  <style dangerouslySetInnerHTML={{ __html: `
  #story[data-in-view="true"] .new-story-reveal,

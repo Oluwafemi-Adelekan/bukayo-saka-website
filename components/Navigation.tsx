@@ -58,9 +58,9 @@ export default function Navigation() {
   const scrollToSection = useCallback((sectionId: string) => {
     const el = document.getElementById(sectionId)
     if (!el) return
-    const offset = sectionId === 'story'
-      ? (el.offsetHeight - window.innerHeight) * 0.33
-      : 0
+    // Land on the section's CENTRE so the sticky 100vh content fills the
+    // viewport (matches the centre-snap), rather than the top of the 120vh track.
+    const offset = Math.max(0, (el.offsetHeight - window.innerHeight) / 2)
     const top = el.getBoundingClientRect().top + window.scrollY + offset
     setTimeout(() => {
       window.dispatchEvent(new Event('nav:start'))

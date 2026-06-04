@@ -511,9 +511,11 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
  <section
  id="club-and-country"
  ref={sectionRef}
- className="relative w-full flex overflow-hidden "
- style={{ height: '100vh', cursor: isTouch ? 'auto' : 'none', zIndex: 61 }}
+ className="relative w-full "
+ style={{ height: '120vh', cursor: isTouch ? 'auto' : 'none', zIndex: 61 }}
  >
+ {/* Pinned viewport — content stays in frame through the 120vh track */}
+ <div className="sticky top-0 h-screen w-full overflow-hidden">
  <div className="hidden md:flex h-full w-full">
  {/* Arsenal panel */}
  <div
@@ -689,6 +691,7 @@ export default function ClubAndCountry({ careerChapters, trophies, settings }: C
  </div>
  </motion.div>
 
+ </div>
  </div>
  </section>
 

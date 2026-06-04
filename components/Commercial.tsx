@@ -235,9 +235,11 @@ export default function Commercial() {
  <section
  ref={sectionRef}
  id="commercial"
- className="relative overflow-hidden "
- style={{ height: '100vh', background: '#09090b', zIndex: 63 }}
+ className="relative "
+ style={{ height: '120vh', background: '#09090b', zIndex: 63 }}
  >
+ {/* Pinned viewport — content stays in frame through the 120vh track */}
+ <div className="sticky top-0 h-screen overflow-hidden">
  <GrainOverlay />
 
  {/* ── Mobile carousel (md:hidden) ─────────────────────────────────
@@ -498,6 +500,7 @@ export default function Commercial() {
  })}
  </div>
 
+ </div>
  </div>
  </section>
  )

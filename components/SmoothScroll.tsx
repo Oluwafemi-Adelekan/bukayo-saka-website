@@ -16,16 +16,24 @@ export default function SmoothScroll() {
     const SNAP_IDS = ['hero', 'story', 'club-and-country', 'foundation', 'commercial', 'fixtures']
     const overlayOpen = () =>
       !!document.querySelector('[data-story-overlay][data-story-open="true"]')
+
+    // Snap to the CENTRE of each section. Taller (120vh) pinned sections have a
+    // 10vh buffer above and below, so at rest the sticky 100vh content sits
+    // filling the viewport — symmetric, with no empty band on show.
+    const snapOffset = (sec: HTMLElement) =>
+      Math.max(0, (sec.offsetHeight - window.innerHeight) / 2)
     const findClosest = () => {
       let closest: HTMLElement | null = null
       let minDiff = Infinity
+      let offset = 0
       for (const id of SNAP_IDS) {
         const sec = document.getElementById(id)
         if (!sec) continue
-        const diff = Math.abs(sec.getBoundingClientRect().top)
-        if (diff < minDiff) { minDiff = diff; closest = sec }
+        const off = snapOffset(sec)
+        const diff = Math.abs(sec.getBoundingClientRect().top + off)
+        if (diff < minDiff) { minDiff = diff; closest = sec; offset = off }
       }
-      return { closest, minDiff }
+      return { closest, minDiff, offset }
     }
 
     // ── Touch devices: Lenis is off, so snap with native smooth scroll ──
@@ -42,11 +50,10 @@ export default function SmoothScroll() {
         clearTimeout(idleTimer)
         idleTimer = setTimeout(() => {
           if (overlayOpen()) return
-          const { closest, minDiff } = findClosest()
-          // Snap only when near a boundary — never yanks mid pinned section.
-          if (!closest || minDiff <= 8 || minDiff > window.innerHeight * 0.5) return
+          const { closest, minDiff, offset } = findClosest()
+          if (!closest || minDiff <= 8) return
           snapping = true
-          const top = window.scrollY + closest.getBoundingClientRect().top
+          const top = window.scrollY + closest.getBoundingClientRect().top + offset
           window.scrollTo({ top, behavior: 'smooth' })
           clearTimeout(snapClear)
           snapClear = setTimeout(() => { snapping = false }, 760)
@@ -99,11 +106,12 @@ export default function SmoothScroll() {
 
       scrollTimeout = setTimeout(() => {
         if (overlayOpen()) return
-        const { closest, minDiff } = findClosest()
+        const { closest, minDiff, offset } = findClosest()
         if (!closest || minDiff <= 10) return
 
         isSnapping = true
-        lenis.scrollTo(closest, {
+        const target = window.scrollY + closest.getBoundingClientRect().top + offset
+        lenis.scrollTo(target, {
           duration: 0.8,
           easing: (t: number) => t, // Linear animation as requested
           onComplete: () => {
